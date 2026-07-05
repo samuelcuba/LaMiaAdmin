@@ -99,6 +99,7 @@
                 <thead>
                     <tr class="border-b border-gray-700 text-gray-400">
                         <th class="p-3">Fecha</th>
+                        <th class="p-3">Moneda</th> <!-- NUEVA COLUMNA -->
                         <th class="p-3">Producto</th>
                         <th class="p-3">Cant.</th>
                         <th class="p-3">Ingreso</th>
@@ -297,10 +298,14 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
                 totalGanancia += v.ganancia;
 
                 const fecha = new Date(v.fecha).toLocaleString('es-CU');
+                
+                // Le damos color según la moneda
+                const colorMoneda = v.moneda === 'USD' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300';
 
                 tbody.innerHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-700">
                         <td class="p-3 text-xs text-gray-400">${fecha}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorMoneda}">${v.moneda || 'CUP'}</span></td> <!-- NUEVA CELDA -->
                         <td class="p-3 font-bold">${v.producto}</td>
                         <td class="p-3">${v.cantidad}</td>
                         <td class="p-3 text-green-400">${v.total_venta} CUP</td>
