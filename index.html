@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - La Mia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-6">
+
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="max-w-md mx-auto mt-20 bg-gray-800 p-8 rounded-xl shadow-lg text-center">
+        <h1 class="text-2xl font-bold mb-4">Panel de Administración 🔒</h1>
+        <p class="text-gray-400 mb-4">Ingresa la contraseña para administrar la tienda.</p>
+        <input type="password" id="password" class="w-full p-2 rounded text-black text-center" placeholder="Contraseña">
+        <button onclick="login()" class="mt-4 bg-red-600 hover:bg-red-700 w-full py-2 rounded font-bold">Entrar</button>
+        <p id="error-msg" class="text-red-400 mt-2 hidden">Contraseña incorrecta.</p>
+    </div>
+
+    <!-- Panel Real (Oculto hasta que ingrese la contraseña) -->
+    <div id="admin-panel" class="hidden max-w-5xl mx-auto">
+        <h1 class="text-3xl font-bold text-red-500 mb-6">Panel de Administración 🛠️</h1>
+
+        <!-- Formulario Agregar/Editar -->
+        <div class="mb-8 p-6 bg-gray-800 rounded-xl">
+            <h2 id="form-title" class="text-xl font-bold mb-4">Agregar Nuevo Producto</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="edit-id">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Nombre</label>
+                    <input type="text" id="nombre" class="w-full p-2 rounded text-black" oninput="sugerirImagen()">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Categoría</label>
+                    <input type="text" id="categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Bebidas">
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Costo</label>
+                        <input type="number" id="costo" class="w-full p-2 rounded text-black">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Venta</label>
+                        <input type="number" id="venta" class="w-full p-2 rounded text-black">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Stock</label>
+                        <input type="number" id="existencia" class="w-full p-2 rounded text-black" value="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">URL de Imagen</label>
+                    <input type="text" id="img" class="w-full p-2 rounded text-black" placeholder="Autocompleta o pega link">
+                </div>
+            </div>
+            <div class="mt-4 flex gap-4">
+                <button onclick="guardarProducto()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-bold">💾 Guardar</button>
+                <button onclick="cancelarEdicion()" class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded font-bold hidden" id="btn-cancelar">✖ Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="overflow-x-auto bg-gray-800 rounded-xl">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-gray-700 text-gray-400">
+                        <th class="p-3">Producto</th>
+                        <th class="p-3">Costo</th>
+                        <th class="p-3">Venta</th>
+                        <th class="p-3">Stock</th>
+                        <th class="p-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://xwaodoprvfzzszohyrlh.supabase.co
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA'; // Tu anon key larga
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const PASSWORD_ADMIN = "Rocio2004*"; // ¡CAMBIA ESTA CONTRASEÑA!
+
+        let editandoId = null;
+
+        // --- LOGIN ---
+        function login() {
+            const pass = document.getElementById('password').value;
+            if (pass === PASSWORD_ADMIN) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                cargarProductos();
+            } else {
+                document.getElementById('error-msg').classList.remove('hidden');
+            }
+        }
+
+        // --- SUGERIR IMAGEN ---
+        function sugerirImagen() {
+            let nombre = document.getElementById('nombre').value;
+            if(nombre.length > 2) {
+                document.getElementById('img').value = `https://loremflickr.com/300/200/${nombre.split(' ')[0]}`;
+            }
+        }
+
+        // --- CARGAR PRODUCTOS ---
+        async function cargarProductos() {
+            const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true });
+            if (error) return alert("Error al cargar");
+
+            const tbody = document.getElementById('tabla-body');
+            tbody.innerHTML = '';
+            data.forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-700 hover:bg-gray-700">
+                        <td class="p-3">
+                            <img src="${p.img}" class="w-10 h-10 rounded inline-block mr-2 object-cover">
+                            <span class="font-bold">${p.nombre}</span><br>
+                            <span class="text-xs text-gray-400">${p.categoria}</span>
+                        </td>
+                        <td class="p-3 text-gray-400">${p.costo || 0}</td>
+                        <td class="p-3 text-green-400 font-bold">${p.venta}</td>
+                        <td class="p-3 ${p.existencia <= 0 ? 'text-red-500' : 'text-white'} font-bold">${p.existencia || 0}</td>
+                        <td class="p-3 flex gap-2">
+                            <button onclick="editarProducto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.costo}, ${p.venta}, ${p.existencia}, '${p.categoria}', '${p.img}')" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️ Editar</button>
+                            <button onclick="eliminarProducto(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- GUARDAR (Agregar o Actualizar) ---
+        async function guardarProducto() {
+            const id = document.getElementById('edit-id').value;
+            const nombre = document.getElementById('nombre').value;
+            const costo = parseInt(document.getElementById('costo').value) || 0;
+            const venta = parseInt(document.getElementById('venta').value) || 0;
+            const existencia = parseInt(document.getElementById('existencia').value) || 0;
+            const categoria = document.getElementById('categoria').value;
+            const img = document.getElementById('img').value;
+
+            if (!nombre || !venta || !categoria || !img) {
+                return alert("Faltan datos obligatorios");
+            }
+
+            if (editandoId !== null) {
+                // Actualizar
+                const { error } = await sb.from('productos').update({ nombre, costo, venta, existencia, categoria, img }).eq('id', editandoId);
+                if (error) return alert("Error al actualizar");
+                alert("Producto actualizado con éxito");
+            } else {
+                // Agregar (Generar nuevo ID)
+                const { data: maxData } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1);
+                const nuevoId = maxData.length > 0 ? maxData[0].id + 1 : 1;
+                
+                const { error } = await sb.from('productos').insert([{ id: nuevoId, nombre, costo, venta, existencia, categoria, img }]);
+                if (error) return alert("Error al agregar");
+                alert("Producto agregado con éxito");
+            }
+
+            cancelarEdicion();
+            cargarProductos();
+        }
+
+        // --- EDITAR ---
+        function editarProducto(id, nombre, costo, venta, existencia, categoria, img) {
+            editandoId = id;
+            document.getElementById('edit-id').value = id;
+            document.getElementById('nombre').value = nombre;
+            document.getElementById('costo').value = costo;
+            document.getElementById('venta').value = venta;
+            document.getElementById('existencia').value = existencia;
+            document.getElementById('categoria').value = categoria;
+            document.getElementById('img').value = img;
+            
+            document.getElementById('form-title').innerText = "Editando: " + nombre;
+            document.getElementById('btn-cancelar').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        // --- ELIMINAR ---
+        async function eliminarProducto(id) {
+            if (!confirm("¿Seguro que quieres eliminar este producto de la tienda?")) return;
+            const { error } = await sb.from('productos').delete().eq('id', id);
+            if (error) return alert("Error al eliminar");
+            cargarProductos();
+        }
+
+        // --- CANCELAR ---
+        function cancelarEdicion() {
+            editandoId = null;
+            document.getElementById('edit-id').value = '';
+            document.getElementById('nombre').value = '';
+            document.getElementById('costo').value = '';
+            document.getElementById('venta').value = '';
+            document.getElementById('existencia').value = '0';
+            document.getElementById('categoria').value = '';
+            document.getElementById('img').value = '';
+            document.getElementById('form-title').innerText = "Agregar Nuevo Producto";
+            document.getElementById('btn-cancelar').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
