@@ -50,8 +50,10 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">URL de Imagen</label>
-                    <input type="text" id="img" class="w-full p-2 rounded text-black" placeholder="Autocompleta o pega link">
+                    <label class="block text-sm text-gray-400 mb-1">Imagen del Producto</label>
+                    <input type="file" id="img-file" accept="image/*" class="w-full p-2 rounded text-black text-sm mb-2" onchange="previsualizarImagen()">
+                    <input type="text" id="img" class="w-full p-2 rounded text-black hidden" placeholder="URL autogenerada">
+                    <img id="img-preview" src="" class="w-20 h-20 object-cover rounded hidden mt-2">
                 </div>
             </div>
             <div class="mt-4 flex gap-4">
@@ -138,6 +140,32 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
                 document.getElementById('img').value = `https://loremflickr.com/300/200/${nombre.split(' ')[0]}`;
             }
         }
+		
+		        // --- PREVISUALIZAR IMAGEN AL SUBIR ---
+        function previsualizarImagen() {
+            const file = document.getElementById('img-file').files[0];
+            if (file) {
+                document.getElementById('img-preview').src = URL.createObjectURL(file);
+                document.getElementById('img-preview').classList.remove('hidden');
+            }
+        }
+
+        // --- SUBIR IMAGEN A SUPABASE ---
+        async function subirImagenSupabase() {
+            const fileInput = document.getElementById('img-file');
+            if (fileInput.files.length === 0) return null;
+
+            const file = fileInput.files[0];
+            const fileName = `combo_${Date.now()}.jpg`; // Le pone un nombre único
+            
+            // Subir a la carpeta "imagenes"
+            const { error } = await sb.storage.from('imagenes').upload(fileName, file);
+            if (error) throw error;
+
+            // Obtener el link público de la foto subida
+            const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
+            return data.publicUrl;
+        }
 
         // --- CARGAR PRODUCTOS ---
         async function cargarProductos() {
@@ -174,29 +202,43 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
             const venta = parseInt(document.getElementById('venta').value) || 0;
             const existencia = parseInt(document.getElementById('existencia').value) || 0;
             const categoria = document.getElementById('categoria').value;
-            const img = document.getElementById('img').value;
 
-            if (!nombre || !venta || !categoria || !img) {
+            if (!nombre || !venta || !categoria) {
                 return alert("Faltan datos obligatorios");
             }
 
-            if (editandoId !== null) {
-                // Actualizar
-                const { error } = await sb.from('productos').update({ nombre, costo, venta, existencia, categoria, img }).eq('id', editandoId);
-                if (error) return alert("Error al actualizar");
-                alert("Producto actualizado con éxito");
-            } else {
-                // Agregar (Generar nuevo ID)
-                const { data: maxData } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1);
-                const nuevoId = maxData.length > 0 ? maxData[0].id + 1 : 1;
-                
-                const { error } = await sb.from('productos').insert([{ id: nuevoId, nombre, costo, venta, existencia, categoria, img }]);
-                if (error) return alert("Error al agregar");
-                alert("Producto agregado con éxito");
-            }
+            let imgURL = document.getElementById('img').value;
 
-            cancelarEdicion();
-            cargarProductos();
+            try {
+                // Si el usuario subió una foto nueva, la subimos a Supabase
+                if (document.getElementById('img-file').files.length > 0) {
+                    imgURL = await subirImagenSupabase();
+                }
+                
+                if (!imgURL) {
+                    return alert("Por favor sube o pega una imagen para el producto.");
+                }
+
+                if (editandoId !== null) {
+                    // Actualizar
+                    const { error } = await sb.from('productos').update({ nombre, costo, venta, existencia, categoria, img: imgURL }).eq('id', editandoId);
+                    if (error) throw error;
+                    alert("Producto actualizado con éxito");
+                } else {
+                    // Agregar (Generar nuevo ID)
+                    const { data: maxData } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1);
+                    const nuevoId = maxData.length > 0 ? maxData[0].id + 1 : 1;
+                    
+                    const { error } = await sb.from('productos').insert([{ id: nuevoId, nombre, costo, venta, existencia, categoria, img: imgURL }]);
+                    if (error) throw error;
+                    alert("Producto agregado con éxito");
+                }
+
+                cancelarEdicion();
+                cargarProductos();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
         }
 
         // --- EDITAR ---
