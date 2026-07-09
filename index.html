@@ -18,7 +18,7 @@
         <p id="error-msg" class="text-red-400 mt-2 hidden">Contraseña incorrecta.</p>
     </div>
 
-    <!-- Panel Real (Oculto hasta que ingrese la contraseña) -->
+    <!-- Panel Real -->
     <div id="admin-panel" class="hidden max-w-5xl mx-auto">
         <h1 class="text-3xl font-bold text-red-500 mb-6">Panel de Administración 🛠️</h1>
 
@@ -36,7 +36,7 @@
         <!-- IMPORTAR JSON -->
         <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-blue-500">
             <h2 class="text-xl font-bold mb-4 text-blue-400">Importar Inventario desde JSON</h2>
-            <p class="text-gray-400 text-sm mb-3">Sube tu archivo JSON. Se actualizarán los productos existentes y se agregarán los nuevos automáticamente.</p>
+            <p class="text-gray-400 text-sm mb-3">Sube tu archivo JSON. Las imágenes se subirán automáticamente a la nube para no ralentizar la tienda.</p>
             <input type="file" id="json-file-input" accept=".json" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-3">
             <button onclick="procesarJSON()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold">Subir y Sincronizar</button>
             <p id="json-status" class="text-sm text-gray-400 mt-2"></p>
@@ -139,11 +139,11 @@
         const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const PASSWORD_ADMIN = "Rocio2004*"; // ¡CAMBIA ESTA CONTRASEÑA!
+        const PASSWORD_ADMIN = "Rocio*2004*"; // ¡CAMBIA ESTA CONTRASEÑA!
 
         let editandoId = null;
         let mantenimientoActivo = false;
-        let productosCache = []; // Guardamos los productos aquí para no pasar datos pesados a los botones
+        let productosCache = []; 
 
         // --- LOGIN ---
         function login() {
@@ -159,22 +159,31 @@
             }
         }
 
-        // --- IMPORTAR JSON ---
-        function chunkArray(array, size) {
-            const result = [];
-            for (let i = 0; i < array.length; i += size) {
-                result.push(array.slice(i, i + size));
+        // --- HELPERS PARA IMÁGENES ---
+        function base64ToFile(base64String, filename) {
+            let cleanBase64 = base64String.replace(/\n/g, '').trim();
+            let mime = 'image/jpeg';
+            let bstr;
+            if (cleanBase64.startsWith('data:')) {
+                const arr = cleanBase64.split(',');
+                mime = arr[0].match(/:(.*?);/)[1];
+                bstr = atob(arr[1]);
+            } else {
+                bstr = atob(cleanBase64);
             }
-            return result;
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, {type:mime});
         }
 
         async function procesarJSON() {
             const fileInput = document.getElementById('json-file-input');
             const statusEl = document.getElementById('json-status');
             
-            if (fileInput.files.length === 0) {
-                return alert("Por favor selecciona un archivo JSON.");
-            }
+            if (fileInput.files.length === 0) return alert("Por favor selecciona un archivo JSON.");
 
             statusEl.innerText = "Leyendo archivo...";
             const file = fileInput.files[0];
@@ -187,17 +196,30 @@
                     
                     statusEl.innerText = `Procesando ${datos.length} productos...`;
                     
-                    const productosMapeados = datos.map(p => {
+                    const productosParaSubir = [];
+
+                    for (const p of datos) {
                         let imgURL = p.img || "";
-                        // Si tiene imagenBase64, la limpiamos de saltos de línea y la convertimos
+
+                        // Si tiene imagenBase64, la convertimos a archivo y la subimos a Supabase Storage
                         if (p.imagenBase64) {
-                            const cleanBase64 = p.imagenBase64.replace(/\n/g, ''); // ¡Esto arregla el error del salto de línea!
-                            imgURL = `data:image/jpeg;base64,${cleanBase64}`;
+                            try {
+                                const fileName = `prod_${p.id}_${Date.now()}.jpg`;
+                                const imgFile = base64ToFile(p.imagenBase64, fileName);
+                                
+                                const { error: upError } = await sb.storage.from('imagenes').upload(fileName, imgFile);
+                                if (!upError) {
+                                    const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
+                                    imgURL = data.publicUrl;
+                                }
+                            } catch (imgErr) {
+                                console.error("Error convirtiendo imagen:", imgErr);
+                            }
                         } else if (p.imagenPath) {
                             imgURL = p.imagenPath;
                         }
 
-                        return {
+                        productosParaSubir.push({
                             id: p.id,
                             nombre: p.nombreProducto || p.nombre,
                             costo: p.precioCosto || p.costo || 0,
@@ -205,28 +227,31 @@
                             existencia: p.stockActual || p.existencia || 0,
                             categoria: p.categoria || "OTRO",
                             img: imgURL
-                        };
-                    });
+                        });
 
-                    statusEl.innerText = "Subiendo a Supabase (esto puede tardar)...";
+                        statusEl.innerText = `Preparando imágenes... (${productosParaSubir.length}/${datos.length})`;
+                    }
+
+                    statusEl.innerText = "Subiendo productos a la base de datos...";
                     
-                    const chunks = chunkArray(productosMapeados, 5);
+                    // Subir en lotes de 5
+                    const chunkSize = 5;
                     let errores = 0;
 
-                    for (let i = 0; i < chunks.length; i++) {
-                        const { error } = await sb.from('productos').upsert(chunks[i], { onConflict: 'id' });
+                    for (let i = 0; i < productosParaSubir.length; i += chunkSize) {
+                        const chunk = productosParaSubir.slice(i, i + chunkSize);
+                        const { error } = await sb.from('productos').upsert(chunk, { onConflict: 'id' });
                         if (error) {
                             console.error("Error en lote:", error);
                             errores++;
                         }
-                        statusEl.innerText = `Subiendo... Lote ${i+1} de ${chunks.length}`;
+                        statusEl.innerText = `Guardando en base de datos... Lote ${Math.floor(i/chunkSize) + 1} de ${Math.ceil(productosParaSubir.length/chunkSize)}`;
                     }
 
                     if (errores > 0) {
                         statusEl.innerText = `Importación completada con ${errores} errores.`;
-                        alert("Hubo algunos errores al importar. Revisa la consola (F12).");
                     } else {
-                        statusEl.innerText = `¡Éxito! ${productosMapeados.length} productos importados.`;
+                        statusEl.innerText = `¡Éxito! ${productosParaSubir.length} productos importados.`;
                         alert("¡Inventario importado y sincronizado con éxito!");
                     }
                     
@@ -237,11 +262,9 @@
                     alert("Error al leer el JSON: " + err.message);
                 }
             };
-            
             reader.readAsText(file);
         }
 
-        // --- IMAGEN SUPABASE ---
         function previsualizarImagen() {
             const file = document.getElementById('img-file').files[0];
             if (file) {
@@ -266,7 +289,7 @@
             const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true });
             if (error) return alert("Error al cargar");
 
-            productosCache = data; // Guardamos en memoria
+            productosCache = data;
 
             const tbody = document.getElementById('tabla-body');
             tbody.innerHTML = '';
@@ -274,7 +297,7 @@
                 tbody.innerHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-700">
                         <td class="p-3">
-                            <img src="${p.img}" class="w-10 h-10 rounded inline-block mr-2 object-cover">
+                            <img src="${p.img}" loading="lazy" class="w-10 h-10 rounded inline-block mr-2 object-cover">
                             <span class="font-bold">${p.nombre}</span><br>
                             <span class="text-xs text-gray-400">${p.categoria}</span>
                         </td>
@@ -327,7 +350,7 @@
             }
         }
 
-        // --- EDITAR (Ahora busca en la memoria, evitando el error del salto de línea) ---
+        // --- EDITAR ---
         function editarProducto(id) {
             const p = productosCache.find(x => x.id === id);
             if (!p) return alert("Producto no encontrado");
