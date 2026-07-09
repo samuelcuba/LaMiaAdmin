@@ -36,7 +36,7 @@
         <!-- IMPORTAR JSON -->
         <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-blue-500">
             <h2 class="text-xl font-bold mb-4 text-blue-400">Importar Inventario desde JSON</h2>
-            <p class="text-gray-400 text-sm mb-3">Sube tu archivo JSON. Las imágenes se subirán automáticamente a la nube para no ralentizar la tienda.</p>
+            <p class="text-gray-400 text-sm mb-3">Sube tu archivo JSON. Los productos nuevos se agregarán completos. Si el producto ya existe, <strong>solo se actualizarán el stock, el costo y el precio de venta</strong> (no se sobreescribirá la imagen ni el nombre).</p>
             <input type="file" id="json-file-input" accept=".json" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-3">
             <button onclick="procesarJSON()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold">Subir y Sincronizar</button>
             <p id="json-status" class="text-sm text-gray-400 mt-2"></p>
@@ -85,7 +85,6 @@
         <!-- TABLA PRODUCTOS CON FILTROS -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <h2 class="text-xl font-bold text-red-400">Inventario Actual</h2>
-            <!-- Filtros -->
             <div class="flex gap-3 w-full sm:w-auto">
                 <input type="text" id="input-buscar" placeholder="🔍 Buscar..." class="p-2 rounded text-black text-sm w-full" oninput="renderizarTablaProductos()">
                 <select id="filtro-stock" class="p-2 rounded text-black text-sm" onchange="renderizarTablaProductos()">
@@ -206,30 +205,47 @@
                     const json = JSON.parse(e.target.result);
                     const datos = json.datos || json;
                     
-                    statusEl.innerText = `Procesando ${datos.length} productos...`;
+                    statusEl.innerText = "Verificando productos existentes en la base de datos...";
                     
-                    const productosParaSubir = [];
+                    // 1. OBTENER TODOS LOS IDs EXISTENTES PARA NO SOBREESCRIBIR IMÁGENES NI NOMBRES
+                    let idsExistentes = new Set();
+                    let from = 0;
+                    while(true) {
+                        const { data: pageData } = await sb.from('productos').select('id').range(from, from + 999);
+                        if (!pageData || pageData.length === 0) break;
+                        pageData.forEach(p => idsExistentes.add(p.id));
+                        if (pageData.length < 1000) break;
+                        from += 1000;
+                    }
+
+                    const nuevosProductos = [];
+                    const productosParaActualizar = [];
+
+                    statusEl.innerText = `Procesando ${datos.length} productos...`;
 
                     for (const p of datos) {
                         let imgURL = p.img || "";
 
-                        if (p.imagenBase64) {
-                            try {
-                                const fileName = `prod_${p.id}_${Date.now()}.jpg`;
-                                const imgFile = base64ToFile(p.imagenBase64, fileName);
-                                const { error: upError } = await sb.storage.from('imagenes').upload(fileName, imgFile);
-                                if (!upError) {
-                                    const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
-                                    imgURL = data.publicUrl;
+                        // Si el producto es NUEVO, procesamos su imagen
+                        if (!idsExistentes.has(p.id)) {
+                            if (p.imagenBase64) {
+                                try {
+                                    const fileName = `prod_${p.id}_${Date.now()}.jpg`;
+                                    const imgFile = base64ToFile(p.imagenBase64, fileName);
+                                    const { error: upError } = await sb.storage.from('imagenes').upload(fileName, imgFile);
+                                    if (!upError) {
+                                        const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
+                                        imgURL = data.publicUrl;
+                                    }
+                                } catch (imgErr) {
+                                    console.error("Error convirtiendo imagen:", imgErr);
                                 }
-                            } catch (imgErr) {
-                                console.error("Error convirtiendo imagen:", imgErr);
+                            } else if (p.imagenPath) {
+                                imgURL = p.imagenPath;
                             }
-                        } else if (p.imagenPath) {
-                            imgURL = p.imagenPath;
                         }
 
-                        productosParaSubir.push({
+                        const productoData = {
                             id: p.id,
                             nombre: p.nombreProducto || p.nombre,
                             costo: p.precioCosto || p.costo || 0,
@@ -237,31 +253,51 @@
                             existencia: p.stockActual || p.existencia || 0,
                             categoria: p.categoria || "OTRO",
                             img: imgURL
-                        });
+                        };
 
-                        statusEl.innerText = `Preparando imágenes... (${productosParaSubir.length}/${datos.length})`;
+                        if (idsExistentes.has(p.id)) {
+                            // SI YA EXISTE: Solo actualizamos costo, venta y stock
+                            productosParaActualizar.push({
+                                id: productoData.id,
+                                costo: productoData.costo,
+                                venta: productoData.venta,
+                                existencia: productoData.existencia
+                            });
+                        } else {
+                            // SI ES NUEVO: Insertamos todo
+                            nuevosProductos.push(productoData);
+                        }
+
+                        statusEl.innerText = `Preparando productos... (${nuevosProductos.length + productosParaActualizar.length}/${datos.length})`;
                     }
 
-                    statusEl.innerText = "Subiendo productos a la base de datos...";
+                    statusEl.innerText = `Subiendo a Supabase (${nuevosProductos.length} nuevos, ${productosParaActualizar.length} actualizaciones)...`;
                     
                     const chunkSize = 5;
                     let errores = 0;
 
-                    for (let i = 0; i < productosParaSubir.length; i += chunkSize) {
-                        const chunk = productosParaSubir.slice(i, i + chunkSize);
+                    // 2. INSERTAR NUEVOS (con todos los datos)
+                    for (let i = 0; i < nuevosProductos.length; i += chunkSize) {
+                        const chunk = nuevosProductos.slice(i, i + chunkSize);
+                        const { error } = await sb.from('productos').insert(chunk);
+                        if (error) { console.error("Error insert:", error); errores++; }
+                        statusEl.innerText = `Insertando nuevos... (${i + chunk.length}/${nuevosProductos.length})`;
+                    }
+
+                    // 3. ACTUALIZAR EXISTENTES (usamos upsert, pero como solo enviamos 4 campos, solo actualiza esos)
+                    for (let i = 0; i < productosParaActualizar.length; i += chunkSize) {
+                        const chunk = productosParaActualizar.slice(i, i + chunkSize);
                         const { error } = await sb.from('productos').upsert(chunk, { onConflict: 'id' });
-                        if (error) {
-                            console.error("Error en lote:", error);
-                            errores++;
-                        }
-                        statusEl.innerText = `Guardando en base de datos... Lote ${Math.floor(i/chunkSize) + 1} de ${Math.ceil(productosParaSubir.length/chunkSize)}`;
+                        if (error) { console.error("Error update:", error); errores++; }
+                        statusEl.innerText = `Actualizando existentes... (${i + chunk.length}/${productosParaActualizar.length})`;
                     }
 
                     if (errores > 0) {
                         statusEl.innerText = `Importación completada con ${errores} errores.`;
+                        alert("Hubo algunos errores al importar. Revisa la consola (F12).");
                     } else {
-                        statusEl.innerText = `¡Éxito! ${productosParaSubir.length} productos importados.`;
-                        alert("¡Inventario importado y sincronizado con éxito!");
+                        statusEl.innerText = `¡Éxito! ${nuevosProductos.length} nuevos, ${productosParaActualizar.length} actualizados.`;
+                        alert("¡Sincronización completada con éxito!");
                     }
                     
                     cargarProductos();
@@ -298,8 +334,8 @@
             const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true });
             if (error) return alert("Error al cargar");
 
-            productosCache = data; // Guardamos en memoria
-            renderizarTablaProductos(); // Dibujamos la tabla
+            productosCache = data;
+            renderizarTablaProductos();
         }
 
         function renderizarTablaProductos() {
@@ -309,7 +345,6 @@
             const tbody = document.getElementById('tabla-body');
             tbody.innerHTML = '';
             
-            // Filtramos los productos que están en la memoria
             const productosFiltrados = productosCache.filter(p => {
                 const coincideTexto = p.nombre.toLowerCase().includes(buscar) || (p.categoria && p.categoria.toLowerCase().includes(buscar));
                 
