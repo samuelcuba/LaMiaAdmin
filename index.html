@@ -82,8 +82,20 @@
             </div>
         </div>
 
-        <!-- Tabla Productos -->
-        <h2 class="text-xl font-bold mb-4 text-red-400">Inventario Actual</h2>
+        <!-- TABLA PRODUCTOS CON FILTROS -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+            <h2 class="text-xl font-bold text-red-400">Inventario Actual</h2>
+            <!-- Filtros -->
+            <div class="flex gap-3 w-full sm:w-auto">
+                <input type="text" id="input-buscar" placeholder="🔍 Buscar..." class="p-2 rounded text-black text-sm w-full" oninput="renderizarTablaProductos()">
+                <select id="filtro-stock" class="p-2 rounded text-black text-sm" onchange="renderizarTablaProductos()">
+                    <option value="todos">Todos</option>
+                    <option value="con">Con Stock</option>
+                    <option value="sin">Agotados</option>
+                </select>
+            </div>
+        </div>
+
         <div class="overflow-x-auto bg-gray-800 rounded-xl mb-12">
             <table class="w-full text-left">
                 <thead>
@@ -159,7 +171,7 @@
             }
         }
 
-        // --- HELPERS PARA IMÁGENES ---
+        // --- HELPERS PARA IMÁGENES (IMPORTACIÓN JSON) ---
         function base64ToFile(base64String, filename) {
             let cleanBase64 = base64String.replace(/\n/g, '').trim();
             let mime = 'image/jpeg';
@@ -201,12 +213,10 @@
                     for (const p of datos) {
                         let imgURL = p.img || "";
 
-                        // Si tiene imagenBase64, la convertimos a archivo y la subimos a Supabase Storage
                         if (p.imagenBase64) {
                             try {
                                 const fileName = `prod_${p.id}_${Date.now()}.jpg`;
                                 const imgFile = base64ToFile(p.imagenBase64, fileName);
-                                
                                 const { error: upError } = await sb.storage.from('imagenes').upload(fileName, imgFile);
                                 if (!upError) {
                                     const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
@@ -234,7 +244,6 @@
 
                     statusEl.innerText = "Subiendo productos a la base de datos...";
                     
-                    // Subir en lotes de 5
                     const chunkSize = 5;
                     let errores = 0;
 
@@ -284,16 +293,39 @@
             return data.publicUrl;
         }
 
-        // --- CARGAR PRODUCTOS ---
+        // --- CARGAR Y RENDERIZAR PRODUCTOS ---
         async function cargarProductos() {
             const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true });
             if (error) return alert("Error al cargar");
 
-            productosCache = data;
+            productosCache = data; // Guardamos en memoria
+            renderizarTablaProductos(); // Dibujamos la tabla
+        }
 
+        function renderizarTablaProductos() {
+            const buscar = document.getElementById('input-buscar').value.toLowerCase();
+            const filtroStock = document.getElementById('filtro-stock').value;
+            
             const tbody = document.getElementById('tabla-body');
             tbody.innerHTML = '';
-            data.forEach(p => {
+            
+            // Filtramos los productos que están en la memoria
+            const productosFiltrados = productosCache.filter(p => {
+                const coincideTexto = p.nombre.toLowerCase().includes(buscar) || (p.categoria && p.categoria.toLowerCase().includes(buscar));
+                
+                let coincideStock = true;
+                if (filtroStock === 'con' && p.existencia <= 0) coincideStock = false;
+                if (filtroStock === 'sin' && p.existencia > 0) coincideStock = false;
+                
+                return coincideTexto && coincideStock;
+            });
+
+            if(productosFiltrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">No se encontraron productos.</td></tr>`;
+                return;
+            }
+
+            productosFiltrados.forEach(p => {
                 tbody.innerHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-700">
                         <td class="p-3">
