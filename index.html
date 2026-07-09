@@ -33,10 +33,10 @@
             </button>
         </div>
 
-        <!-- IMPORTAR JSON (NUEVA SECCIÓN) -->
+        <!-- IMPORTAR JSON -->
         <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-blue-500">
             <h2 class="text-xl font-bold mb-4 text-blue-400">Importar Inventario desde JSON</h2>
-            <p class="text-gray-400 text-sm mb-3">Sube tu archivo JSON (ej: exportado de tu punto de venta). Se actualizarán los productos existentes y se agregarán los nuevos automáticamente.</p>
+            <p class="text-gray-400 text-sm mb-3">Sube tu archivo JSON. Se actualizarán los productos existentes y se agregarán los nuevos automáticamente.</p>
             <input type="file" id="json-file-input" accept=".json" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-3">
             <button onclick="procesarJSON()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold">Subir y Sincronizar</button>
             <p id="json-status" class="text-sm text-gray-400 mt-2"></p>
@@ -139,10 +139,11 @@
         const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const PASSWORD_ADMIN = "Rocio2004*"; // ¡CAMBIA ESTA CONTRASEÑA!
+        const PASSWORD_ADMIN = "admin123"; // ¡CAMBIA ESTA CONTRASEÑA!
 
         let editandoId = null;
         let mantenimientoActivo = false;
+        let productosCache = []; // Guardamos los productos aquí para no pasar datos pesados a los botones
 
         // --- LOGIN ---
         function login() {
@@ -182,15 +183,16 @@
             reader.onload = async function(e) {
                 try {
                     const json = JSON.parse(e.target.result);
-                    const datos = json.datos || json; // Acepta {datos: []} o directamente []
+                    const datos = json.datos || json;
                     
                     statusEl.innerText = `Procesando ${datos.length} productos...`;
                     
                     const productosMapeados = datos.map(p => {
                         let imgURL = p.img || "";
-                        // Si tiene imagenBase64, la convertimos a Data URI para que la web la lea
+                        // Si tiene imagenBase64, la limpiamos de saltos de línea y la convertimos
                         if (p.imagenBase64) {
-                            imgURL = `data:image/jpeg;base64,${p.imagenBase64}`;
+                            const cleanBase64 = p.imagenBase64.replace(/\n/g, ''); // ¡Esto arregla el error del salto de línea!
+                            imgURL = `data:image/jpeg;base64,${cleanBase64}`;
                         } else if (p.imagenPath) {
                             imgURL = p.imagenPath;
                         }
@@ -208,7 +210,6 @@
 
                     statusEl.innerText = "Subiendo a Supabase (esto puede tardar)...";
                     
-                    // Subir en lotes de 5 para evitar límites de tamaño de la API
                     const chunks = chunkArray(productosMapeados, 5);
                     let errores = 0;
 
@@ -229,8 +230,8 @@
                         alert("¡Inventario importado y sincronizado con éxito!");
                     }
                     
-                    cargarProductos(); // Recargar la tabla
-                    fileInput.value = ""; // Limpiar input
+                    cargarProductos();
+                    fileInput.value = "";
                 } catch (err) {
                     statusEl.innerText = "Error al leer el JSON.";
                     alert("Error al leer el JSON: " + err.message);
@@ -265,6 +266,8 @@
             const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true });
             if (error) return alert("Error al cargar");
 
+            productosCache = data; // Guardamos en memoria
+
             const tbody = document.getElementById('tabla-body');
             tbody.innerHTML = '';
             data.forEach(p => {
@@ -279,7 +282,7 @@
                         <td class="p-3 text-green-400 font-bold">${p.venta}</td>
                         <td class="p-3 ${p.existencia <= 0 ? 'text-red-500' : 'text-white'} font-bold">${p.existencia || 0}</td>
                         <td class="p-3 flex gap-2">
-                            <button onclick="editarProducto(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.costo}, ${p.venta}, ${p.existencia}, '${p.categoria}', '${p.img}')" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️ Editar</button>
+                            <button onclick="editarProducto(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️ Editar</button>
                             <button onclick="eliminarProducto(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️ Eliminar</button>
                         </td>
                     </tr>
@@ -324,19 +327,22 @@
             }
         }
 
-        // --- EDITAR ---
-        function editarProducto(id, nombre, costo, venta, existencia, categoria, img) {
+        // --- EDITAR (Ahora busca en la memoria, evitando el error del salto de línea) ---
+        function editarProducto(id) {
+            const p = productosCache.find(x => x.id === id);
+            if (!p) return alert("Producto no encontrado");
+
             editandoId = id;
             document.getElementById('edit-id').value = id;
-            document.getElementById('nombre').value = nombre;
-            document.getElementById('costo').value = costo;
-            document.getElementById('venta').value = venta;
-            document.getElementById('existencia').value = existencia;
-            document.getElementById('categoria').value = categoria;
-            document.getElementById('img').value = img;
-            document.getElementById('img-preview').src = img;
+            document.getElementById('nombre').value = p.nombre;
+            document.getElementById('costo').value = p.costo;
+            document.getElementById('venta').value = p.venta;
+            document.getElementById('existencia').value = p.existencia;
+            document.getElementById('categoria').value = p.categoria;
+            document.getElementById('img').value = p.img;
+            document.getElementById('img-preview').src = p.img;
             document.getElementById('img-preview').classList.remove('hidden');
-            document.getElementById('form-title').innerText = "Editando: " + nombre;
+            document.getElementById('form-title').innerText = "Editando: " + p.nombre;
             document.getElementById('btn-cancelar').classList.remove('hidden');
             window.scrollTo(0, 0);
         }
