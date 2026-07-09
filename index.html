@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - La Mia </title>
+    <title>Admin - La Mia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -22,14 +22,34 @@
     <div id="admin-panel" class="hidden max-w-5xl mx-auto">
         <h1 class="text-3xl font-bold text-red-500 mb-6">Panel de Administración 🛠️</h1>
 
+        <!-- Botón de Mantenimiento -->
+        <div class="mb-8 p-4 bg-gray-800 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h3 class="text-lg font-bold text-white">Estado de la Tienda</h3>
+                <p class="text-gray-400 text-sm" id="texto-estado-tienda">Tienda Abierta al público</p>
+            </div>
+            <button onclick="toggleMantenimiento()" id="btn-mantenimiento" class="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded-lg font-bold w-full sm:w-auto">
+                🛠️ Activar Mantenimiento
+            </button>
+        </div>
+
+        <!-- IMPORTAR JSON (NUEVA SECCIÓN) -->
+        <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-blue-500">
+            <h2 class="text-xl font-bold mb-4 text-blue-400">Importar Inventario desde JSON</h2>
+            <p class="text-gray-400 text-sm mb-3">Sube tu archivo JSON (ej: exportado de tu punto de venta). Se actualizarán los productos existentes y se agregarán los nuevos automáticamente.</p>
+            <input type="file" id="json-file-input" accept=".json" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-3">
+            <button onclick="procesarJSON()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold">Subir y Sincronizar</button>
+            <p id="json-status" class="text-sm text-gray-400 mt-2"></p>
+        </div>
+
         <!-- Formulario Agregar/Editar -->
         <div class="mb-8 p-6 bg-gray-800 rounded-xl">
-            <h2 id="form-title" class="text-xl font-bold mb-4">Agregar Nuevo Producto</h2>
+            <h2 id="form-title" class="text-xl font-bold mb-4">Agregar Nuevo Producto Manualmente</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="hidden" id="edit-id">
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Nombre</label>
-                    <input type="text" id="nombre" class="w-full p-2 rounded text-black" oninput="sugerirImagen()">
+                    <input type="text" id="nombre" class="w-full p-2 rounded text-black">
                 </div>
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Categoría</label>
@@ -62,8 +82,9 @@
             </div>
         </div>
 
-        <!-- Tabla -->
-        <div class="overflow-x-auto bg-gray-800 rounded-xl">
+        <!-- Tabla Productos -->
+        <h2 class="text-xl font-bold mb-4 text-red-400">Inventario Actual</h2>
+        <div class="overflow-x-auto bg-gray-800 rounded-xl mb-12">
             <table class="w-full text-left">
                 <thead>
                     <tr class="border-b border-gray-700 text-gray-400">
@@ -76,7 +97,9 @@
                 </thead>
                 <tbody id="tabla-body"></tbody>
             </table>
-			        <!-- HISTORIAL DE VENTAS -->
+        </div>
+
+        <!-- HISTORIAL DE VENTAS -->
         <h2 class="text-3xl font-bold text-green-500 mt-12 mb-6">Estado Financiero 💰</h2>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -99,7 +122,7 @@
                 <thead>
                     <tr class="border-b border-gray-700 text-gray-400">
                         <th class="p-3">Fecha</th>
-                        <th class="p-3">Moneda</th> <!-- NUEVA COLUMNA -->
+                        <th class="p-3">Moneda</th>
                         <th class="p-3">Producto</th>
                         <th class="p-3">Cant.</th>
                         <th class="p-3">Ingreso</th>
@@ -109,17 +132,17 @@
                 <tbody id="tabla-ventas-body"></tbody>
             </table>
         </div>
-        </div>
     </div>
 
     <script>
         // --- CONFIGURACIÓN ---
-const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://xwaodoprvfzzszohyrlh.supabase.co
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA'; // Tu anon key larga
+        const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const PASSWORD_ADMIN = "Rocio2004*"; // ¡CAMBIA ESTA CONTRASEÑA!
+        const PASSWORD_ADMIN = "admin123"; // ¡CAMBIA ESTA CONTRASEÑA!
 
         let editandoId = null;
+        let mantenimientoActivo = false;
 
         // --- LOGIN ---
         function login() {
@@ -128,21 +151,96 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-panel').classList.remove('hidden');
                 cargarProductos();
-				cargarVentas();
+                cargarVentas();
+                verificarMantenimiento();
             } else {
                 document.getElementById('error-msg').classList.remove('hidden');
             }
         }
 
-        // --- SUGERIR IMAGEN ---
-        function sugerirImagen() {
-            let nombre = document.getElementById('nombre').value;
-            if(nombre.length > 2) {
-                document.getElementById('img').value = `https://loremflickr.com/300/200/${nombre.split(' ')[0]}`;
+        // --- IMPORTAR JSON ---
+        function chunkArray(array, size) {
+            const result = [];
+            for (let i = 0; i < array.length; i += size) {
+                result.push(array.slice(i, i + size));
             }
+            return result;
         }
-		
-		        // --- PREVISUALIZAR IMAGEN AL SUBIR ---
+
+        async function procesarJSON() {
+            const fileInput = document.getElementById('json-file-input');
+            const statusEl = document.getElementById('json-status');
+            
+            if (fileInput.files.length === 0) {
+                return alert("Por favor selecciona un archivo JSON.");
+            }
+
+            statusEl.innerText = "Leyendo archivo...";
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    const datos = json.datos || json; // Acepta {datos: []} o directamente []
+                    
+                    statusEl.innerText = `Procesando ${datos.length} productos...`;
+                    
+                    const productosMapeados = datos.map(p => {
+                        let imgURL = p.img || "";
+                        // Si tiene imagenBase64, la convertimos a Data URI para que la web la lea
+                        if (p.imagenBase64) {
+                            imgURL = `data:image/jpeg;base64,${p.imagenBase64}`;
+                        } else if (p.imagenPath) {
+                            imgURL = p.imagenPath;
+                        }
+
+                        return {
+                            id: p.id,
+                            nombre: p.nombreProducto || p.nombre,
+                            costo: p.precioCosto || p.costo || 0,
+                            venta: p.precio || p.venta || 0,
+                            existencia: p.stockActual || p.existencia || 0,
+                            categoria: p.categoria || "OTRO",
+                            img: imgURL
+                        };
+                    });
+
+                    statusEl.innerText = "Subiendo a Supabase (esto puede tardar)...";
+                    
+                    // Subir en lotes de 5 para evitar límites de tamaño de la API
+                    const chunks = chunkArray(productosMapeados, 5);
+                    let errores = 0;
+
+                    for (let i = 0; i < chunks.length; i++) {
+                        const { error } = await sb.from('productos').upsert(chunks[i], { onConflict: 'id' });
+                        if (error) {
+                            console.error("Error en lote:", error);
+                            errores++;
+                        }
+                        statusEl.innerText = `Subiendo... Lote ${i+1} de ${chunks.length}`;
+                    }
+
+                    if (errores > 0) {
+                        statusEl.innerText = `Importación completada con ${errores} errores.`;
+                        alert("Hubo algunos errores al importar. Revisa la consola (F12).");
+                    } else {
+                        statusEl.innerText = `¡Éxito! ${productosMapeados.length} productos importados.`;
+                        alert("¡Inventario importado y sincronizado con éxito!");
+                    }
+                    
+                    cargarProductos(); // Recargar la tabla
+                    fileInput.value = ""; // Limpiar input
+                } catch (err) {
+                    statusEl.innerText = "Error al leer el JSON.";
+                    alert("Error al leer el JSON: " + err.message);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        // --- IMAGEN SUPABASE ---
         function previsualizarImagen() {
             const file = document.getElementById('img-file').files[0];
             if (file) {
@@ -151,19 +249,13 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
             }
         }
 
-        // --- SUBIR IMAGEN A SUPABASE ---
         async function subirImagenSupabase() {
             const fileInput = document.getElementById('img-file');
             if (fileInput.files.length === 0) return null;
-
             const file = fileInput.files[0];
-            const fileName = `combo_${Date.now()}.jpg`; // Le pone un nombre único
-            
-            // Subir a la carpeta "imagenes"
+            const fileName = `combo_${Date.now()}.jpg`;
             const { error } = await sb.storage.from('imagenes').upload(fileName, file);
             if (error) throw error;
-
-            // Obtener el link público de la foto subida
             const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
             return data.publicUrl;
         }
@@ -195,7 +287,7 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
             });
         }
 
-        // --- GUARDAR (Agregar o Actualizar) ---
+        // --- GUARDAR ---
         async function guardarProducto() {
             const id = document.getElementById('edit-id').value;
             const nombre = document.getElementById('nombre').value;
@@ -204,37 +296,27 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
             const existencia = parseInt(document.getElementById('existencia').value) || 0;
             const categoria = document.getElementById('categoria').value;
 
-            if (!nombre || !venta || !categoria) {
-                return alert("Faltan datos obligatorios");
-            }
+            if (!nombre || !venta || !categoria) return alert("Faltan datos obligatorios");
 
             let imgURL = document.getElementById('img').value;
 
             try {
-                // Si el usuario subió una foto nueva, la subimos a Supabase
                 if (document.getElementById('img-file').files.length > 0) {
                     imgURL = await subirImagenSupabase();
                 }
-                
-                if (!imgURL) {
-                    return alert("Por favor sube o pega una imagen para el producto.");
-                }
+                if (!imgURL) return alert("Sube o pega una imagen para el producto.");
 
                 if (editandoId !== null) {
-                    // Actualizar
                     const { error } = await sb.from('productos').update({ nombre, costo, venta, existencia, categoria, img: imgURL }).eq('id', editandoId);
                     if (error) throw error;
                     alert("Producto actualizado con éxito");
                 } else {
-                    // Agregar (Generar nuevo ID)
                     const { data: maxData } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1);
                     const nuevoId = maxData.length > 0 ? maxData[0].id + 1 : 1;
-                    
                     const { error } = await sb.from('productos').insert([{ id: nuevoId, nombre, costo, venta, existencia, categoria, img: imgURL }]);
                     if (error) throw error;
                     alert("Producto agregado con éxito");
                 }
-
                 cancelarEdicion();
                 cargarProductos();
             } catch (err) {
@@ -252,7 +334,8 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
             document.getElementById('existencia').value = existencia;
             document.getElementById('categoria').value = categoria;
             document.getElementById('img').value = img;
-            
+            document.getElementById('img-preview').src = img;
+            document.getElementById('img-preview').classList.remove('hidden');
             document.getElementById('form-title').innerText = "Editando: " + nombre;
             document.getElementById('btn-cancelar').classList.remove('hidden');
             window.scrollTo(0, 0);
@@ -276,19 +359,19 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
             document.getElementById('existencia').value = '0';
             document.getElementById('categoria').value = '';
             document.getElementById('img').value = '';
+            document.getElementById('img-file').value = '';
+            document.getElementById('img-preview').src = '';
+            document.getElementById('img-preview').classList.add('hidden');
             document.getElementById('form-title').innerText = "Agregar Nuevo Producto";
             document.getElementById('btn-cancelar').classList.add('hidden');
         }
-		
-		        // --- CARGAR VENTAS Y FINANZAS ---
+
+        // --- FINANZAS ---
         async function cargarVentas() {
             const { data, error } = await sb.from('ventas').select('*').order('fecha', { ascending: false });
             if (error) return console.error("Error cargando ventas:", error);
 
-            let totalIngresos = 0;
-            let totalCostos = 0;
-            let totalGanancia = 0;
-
+            let totalIngresos = 0, totalCostos = 0, totalGanancia = 0;
             const tbody = document.getElementById('tabla-ventas-body');
             tbody.innerHTML = '';
 
@@ -298,14 +381,12 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
                 totalGanancia += v.ganancia;
 
                 const fecha = new Date(v.fecha).toLocaleString('es-CU');
-                
-                // Le damos color según la moneda ok
                 const colorMoneda = v.moneda === 'USD' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300';
 
                 tbody.innerHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-700">
                         <td class="p-3 text-xs text-gray-400">${fecha}</td>
-                        <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorMoneda}">${v.moneda || 'CUP'}</span></td> <!-- NUEVA CELDA -->
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorMoneda}">${v.moneda || 'CUP'}</span></td>
                         <td class="p-3 font-bold">${v.producto}</td>
                         <td class="p-3">${v.cantidad}</td>
                         <td class="p-3 text-green-400">${v.total_venta} CUP</td>
@@ -318,7 +399,40 @@ const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co'; // Ej: https://
             document.getElementById('total-costos').innerText = totalCostos.toLocaleString('es-CU') + ' CUP';
             document.getElementById('total-ganancia-real').innerText = totalGanancia.toLocaleString('es-CU') + ' CUP';
         }
-		
+
+        // --- MANTENIMIENTO ---
+        async function verificarMantenimiento() {
+            const { data } = await sb.from('ajustes').select('mantenimiento').eq('id', 1).single();
+            mantenimientoActivo = data ? data.mantenimiento : false;
+            actualizarBotonMantenimiento();
+        }
+
+        function actualizarBotonMantenimiento() {
+            const btn = document.getElementById('btn-mantenimiento');
+            const texto = document.getElementById('texto-estado-tienda');
+            if (mantenimientoActivo) {
+                btn.innerText = "🟢 Abrir Tienda";
+                btn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                texto.innerText = "Tienda Cerrada (En Mantenimiento)";
+                texto.classList.add('text-red-400');
+            } else {
+                btn.innerText = "🛠️ Activar Mantenimiento";
+                btn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                texto.innerText = "Tienda Abierta al público";
+                texto.classList.remove('text-red-400');
+            }
+        }
+
+        async function toggleMantenimiento() {
+            const nuevoEstado = !mantenimientoActivo;
+            const { error } = await sb.from('ajustes').update({ mantenimiento: nuevoEstado }).eq('id', 1);
+            if (error) return alert("Error al cambiar el estado.");
+            mantenimientoActivo = nuevoEstado;
+            actualizarBotonMantenimiento();
+            alert(nuevoEstado ? "🛠️ Tienda cerrada por mantenimiento." : "🟢 ¡Tienda abierta para ventas!");
+        }
     </script>
 </body>
 </html>
