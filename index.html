@@ -82,16 +82,20 @@
             </div>
         </div>
 
-        <!-- TABLA PRODUCTOS CON FILTROS -->
+        <!-- TABLA PRODUCTOS CON FILTROS Y EXPORTAR -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <h2 class="text-xl font-bold text-red-400">Inventario Actual</h2>
-            <div class="flex gap-3 w-full sm:w-auto">
-                <input type="text" id="input-buscar" placeholder="🔍 Buscar..." class="p-2 rounded text-black text-sm w-full" oninput="renderizarTablaProductos()">
+            <div class="flex gap-3 w-full sm:w-auto items-center">
+                <input type="text" id="input-buscar" placeholder="🔍 Buscar..." class="p-2 rounded text-black text-sm w-full">
                 <select id="filtro-stock" class="p-2 rounded text-black text-sm" onchange="renderizarTablaProductos()">
                     <option value="todos">Todos</option>
                     <option value="con">Con Stock</option>
                     <option value="sin">Agotados</option>
                 </select>
+                <!-- NUEVO BOTÓN PARA EXPORTAR A EXCEL -->
+                <button onclick="exportarExcel()" class="bg-green-700 hover:bg-green-800 px-4 py-2 rounded font-bold text-sm whitespace-nowrap flex items-center gap-2">
+                    📊 Excel
+                </button>
             </div>
         </div>
 
@@ -170,6 +174,34 @@
             }
         }
 
+        // --- EXPORTAR A EXCEL (CSV) ---
+        function exportarExcel() {
+            if (productosCache.length === 0) return alert("No hay productos para exportar.");
+
+            // \uFEFF es para que Excel reconozca los acentos y la Ñ correctamente
+            let csvContent = "\uFEFFID,Nombre,Categoría,Costo,Venta,Stock Actual,Conteo Físico,Diferencia\n";
+
+            productosCache.forEach(p => {
+                // Escapamos comas y comillas en los nombres poniéndolos entre comillas dobles
+                let nombre = `"${p.nombre.replace(/"/g, '""')}"`;
+                let categoria = `"${p.categoria.replace(/"/g, '""')}"`;
+                
+                // Conteo Físico y Diferencia se exportan vacíos para que los llenen en el almacén
+                csvContent += `${p.id},${nombre},${categoria},${p.costo || 0},${p.venta || 0},${p.existencia || 0},,\n`;
+            });
+
+            // Crear el archivo y forzar la descarga
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "inventario_fisico_la_mia.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // --- HELPERS PARA IMÁGENES (IMPORTACIÓN JSON) ---
         function base64ToFile(base64String, filename) {
             let cleanBase64 = base64String.replace(/\n/g, '').trim();
@@ -207,7 +239,6 @@
                     
                     statusEl.innerText = "Verificando productos existentes en la base de datos...";
                     
-                    // 1. OBTENER TODOS LOS IDs EXISTENTES PARA NO SOBREESCRIBIR IMÁGENES NI NOMBRES
                     let idsExistentes = new Set();
                     let from = 0;
                     while(true) {
@@ -226,7 +257,6 @@
                     for (const p of datos) {
                         let imgURL = p.img || "";
 
-                        // Si el producto es NUEVO, procesamos su imagen
                         if (!idsExistentes.has(p.id)) {
                             if (p.imagenBase64) {
                                 try {
@@ -256,7 +286,6 @@
                         };
 
                         if (idsExistentes.has(p.id)) {
-                            // SI YA EXISTE: Solo actualizamos costo, venta y stock
                             productosParaActualizar.push({
                                 id: productoData.id,
                                 costo: productoData.costo,
@@ -264,7 +293,6 @@
                                 existencia: productoData.existencia
                             });
                         } else {
-                            // SI ES NUEVO: Insertamos todo
                             nuevosProductos.push(productoData);
                         }
 
@@ -276,7 +304,6 @@
                     const chunkSize = 5;
                     let errores = 0;
 
-                    // 2. INSERTAR NUEVOS (con todos los datos)
                     for (let i = 0; i < nuevosProductos.length; i += chunkSize) {
                         const chunk = nuevosProductos.slice(i, i + chunkSize);
                         const { error } = await sb.from('productos').insert(chunk);
@@ -284,7 +311,6 @@
                         statusEl.innerText = `Insertando nuevos... (${i + chunk.length}/${nuevosProductos.length})`;
                     }
 
-                    // 3. ACTUALIZAR EXISTENTES (usamos upsert, pero como solo enviamos 4 campos, solo actualiza esos)
                     for (let i = 0; i < productosParaActualizar.length; i += chunkSize) {
                         const chunk = productosParaActualizar.slice(i, i + chunkSize);
                         const { error } = await sb.from('productos').upsert(chunk, { onConflict: 'id' });
