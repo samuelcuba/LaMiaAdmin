@@ -86,13 +86,13 @@
         <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <h2 class="text-xl font-bold text-red-400">Inventario Actual</h2>
             <div class="flex gap-3 w-full sm:w-auto items-center">
-                <input type="text" id="input-buscar" placeholder="🔍 Buscar..." class="p-2 rounded text-black text-sm w-full">
+                <!-- Se agregó oninput="buscarConRetraso()" -->
+                <input type="text" id="input-buscar" placeholder="🔍 Buscar..." class="p-2 rounded text-black text-sm w-full" oninput="buscarConRetraso()">
                 <select id="filtro-stock" class="p-2 rounded text-black text-sm" onchange="renderizarTablaProductos()">
                     <option value="todos">Todos</option>
                     <option value="con">Con Stock</option>
                     <option value="sin">Agotados</option>
                 </select>
-                <!-- NUEVO BOTÓN PARA EXPORTAR A EXCEL -->
                 <button onclick="exportarExcel()" class="bg-green-700 hover:bg-green-800 px-4 py-2 rounded font-bold text-sm whitespace-nowrap flex items-center gap-2">
                     📊 Excel
                 </button>
@@ -154,11 +154,12 @@
         const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const PASSWORD_ADMIN = "Rocio*2004*"; // ¡CAMBIA ESTA CONTRASEÑA!
+        const PASSWORD_ADMIN = "admin123"; // ¡CAMBIA ESTA CONTRASEÑA!
 
         let editandoId = null;
         let mantenimientoActivo = false;
         let productosCache = []; 
+        let timeoutBusquedaAdmin = null; // Variable para el retraso de búsqueda
 
         // --- LOGIN ---
         function login() {
@@ -177,20 +178,12 @@
         // --- EXPORTAR A EXCEL (CSV) ---
         function exportarExcel() {
             if (productosCache.length === 0) return alert("No hay productos para exportar.");
-
-            // \uFEFF es para que Excel reconozca los acentos y la Ñ correctamente
             let csvContent = "\uFEFFID,Nombre,Categoría,Costo,Venta,Stock Actual,Conteo Físico,Diferencia\n";
-
             productosCache.forEach(p => {
-                // Escapamos comas y comillas en los nombres poniéndolos entre comillas dobles
                 let nombre = `"${p.nombre.replace(/"/g, '""')}"`;
                 let categoria = `"${p.categoria.replace(/"/g, '""')}"`;
-                
-                // Conteo Físico y Diferencia se exportan vacíos para que los llenen en el almacén
                 csvContent += `${p.id},${nombre},${categoria},${p.costo || 0},${p.venta || 0},${p.existencia || 0},,\n`;
             });
-
-            // Crear el archivo y forzar la descarga
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -225,20 +218,15 @@
         async function procesarJSON() {
             const fileInput = document.getElementById('json-file-input');
             const statusEl = document.getElementById('json-status');
-            
             if (fileInput.files.length === 0) return alert("Por favor selecciona un archivo JSON.");
-
             statusEl.innerText = "Leyendo archivo...";
             const file = fileInput.files[0];
             const reader = new FileReader();
-            
             reader.onload = async function(e) {
                 try {
                     const json = JSON.parse(e.target.result);
                     const datos = json.datos || json;
-                    
                     statusEl.innerText = "Verificando productos existentes en la base de datos...";
-                    
                     let idsExistentes = new Set();
                     let from = 0;
                     while(true) {
@@ -248,15 +236,11 @@
                         if (pageData.length < 1000) break;
                         from += 1000;
                     }
-
                     const nuevosProductos = [];
                     const productosParaActualizar = [];
-
                     statusEl.innerText = `Procesando ${datos.length} productos...`;
-
                     for (const p of datos) {
                         let imgURL = p.img || "";
-
                         if (!idsExistentes.has(p.id)) {
                             if (p.imagenBase64) {
                                 try {
@@ -274,58 +258,39 @@
                                 imgURL = p.imagenPath;
                             }
                         }
-
                         const productoData = {
-                            id: p.id,
-                            nombre: p.nombreProducto || p.nombre,
-                            costo: p.precioCosto || p.costo || 0,
-                            venta: p.precio || p.venta || 0,
-                            existencia: p.stockActual || p.existencia || 0,
-                            categoria: p.categoria || "OTRO",
-                            img: imgURL
+                            id: p.id, nombre: p.nombreProducto || p.nombre, costo: p.precioCosto || p.costo || 0,
+                            venta: p.precio || p.venta || 0, existencia: p.stockActual || p.existencia || 0,
+                            categoria: p.categoria || "OTRO", img: imgURL
                         };
-
                         if (idsExistentes.has(p.id)) {
-                            productosParaActualizar.push({
-                                id: productoData.id,
-                                costo: productoData.costo,
-                                venta: productoData.venta,
-                                existencia: productoData.existencia
-                            });
+                            productosParaActualizar.push({ id: productoData.id, costo: productoData.costo, venta: productoData.venta, existencia: productoData.existencia });
                         } else {
                             nuevosProductos.push(productoData);
                         }
-
                         statusEl.innerText = `Preparando productos... (${nuevosProductos.length + productosParaActualizar.length}/${datos.length})`;
                     }
-
                     statusEl.innerText = `Subiendo a Supabase (${nuevosProductos.length} nuevos, ${productosParaActualizar.length} actualizaciones)...`;
-                    
                     const chunkSize = 5;
                     let errores = 0;
-
                     for (let i = 0; i < nuevosProductos.length; i += chunkSize) {
                         const chunk = nuevosProductos.slice(i, i + chunkSize);
                         const { error } = await sb.from('productos').insert(chunk);
                         if (error) { console.error("Error insert:", error); errores++; }
                         statusEl.innerText = `Insertando nuevos... (${i + chunk.length}/${nuevosProductos.length})`;
                     }
-
                     for (let i = 0; i < productosParaActualizar.length; i += chunkSize) {
                         const chunk = productosParaActualizar.slice(i, i + chunkSize);
                         const { error } = await sb.from('productos').upsert(chunk, { onConflict: 'id' });
                         if (error) { console.error("Error update:", error); errores++; }
                         statusEl.innerText = `Actualizando existentes... (${i + chunk.length}/${productosParaActualizar.length})`;
                     }
-
                     if (errores > 0) {
                         statusEl.innerText = `Importación completada con ${errores} errores.`;
-                        alert("Hubo algunos errores al importar. Revisa la consola (F12).");
                     } else {
                         statusEl.innerText = `¡Éxito! ${nuevosProductos.length} nuevos, ${productosParaActualizar.length} actualizados.`;
                         alert("¡Sincronización completada con éxito!");
                     }
-                    
                     cargarProductos();
                     fileInput.value = "";
                 } catch (err) {
@@ -359,25 +324,30 @@
         async function cargarProductos() {
             const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true });
             if (error) return alert("Error al cargar");
-
             productosCache = data;
             renderizarTablaProductos();
         }
 
+        // --- FUNCIÓN DE RETRASO PARA LA BÚSQUEDA ---
+        function buscarConRetraso() {
+            clearTimeout(timeoutBusquedaAdmin);
+            timeoutBusquedaAdmin = setTimeout(() => {
+                renderizarTablaProductos();
+            }, 250);
+        }
+
+        // --- RENDERIZAR TABLA OPTIMIZADO ---
         function renderizarTablaProductos() {
             const buscar = document.getElementById('input-buscar').value.toLowerCase();
             const filtroStock = document.getElementById('filtro-stock').value;
             
             const tbody = document.getElementById('tabla-body');
-            tbody.innerHTML = '';
             
             const productosFiltrados = productosCache.filter(p => {
                 const coincideTexto = p.nombre.toLowerCase().includes(buscar) || (p.categoria && p.categoria.toLowerCase().includes(buscar));
-                
                 let coincideStock = true;
                 if (filtroStock === 'con' && p.existencia <= 0) coincideStock = false;
                 if (filtroStock === 'sin' && p.existencia > 0) coincideStock = false;
-                
                 return coincideTexto && coincideStock;
             });
 
@@ -386,8 +356,10 @@
                 return;
             }
 
+            // Construir todo el HTML en memoria
+            let htmlAcumulado = '';
             productosFiltrados.forEach(p => {
-                tbody.innerHTML += `
+                htmlAcumulado += `
                     <tr class="border-b border-gray-700 hover:bg-gray-700">
                         <td class="p-3">
                             <img src="${p.img}" loading="lazy" class="w-10 h-10 rounded inline-block mr-2 object-cover">
@@ -404,6 +376,9 @@
                     </tr>
                 `;
             });
+
+            // Inyectar todo de golpe
+            tbody.innerHTML = htmlAcumulado;
         }
 
         // --- GUARDAR ---
@@ -414,17 +389,13 @@
             const venta = parseInt(document.getElementById('venta').value) || 0;
             const existencia = parseInt(document.getElementById('existencia').value) || 0;
             const categoria = document.getElementById('categoria').value;
-
             if (!nombre || !venta || !categoria) return alert("Faltan datos obligatorios");
-
             let imgURL = document.getElementById('img').value;
-
             try {
                 if (document.getElementById('img-file').files.length > 0) {
                     imgURL = await subirImagenSupabase();
                 }
                 if (!imgURL) return alert("Sube o pega una imagen para el producto.");
-
                 if (editandoId !== null) {
                     const { error } = await sb.from('productos').update({ nombre, costo, venta, existencia, categoria, img: imgURL }).eq('id', editandoId);
                     if (error) throw error;
@@ -447,7 +418,6 @@
         function editarProducto(id) {
             const p = productosCache.find(x => x.id === id);
             if (!p) return alert("Producto no encontrado");
-
             editandoId = id;
             document.getElementById('edit-id').value = id;
             document.getElementById('nombre').value = p.nombre;
@@ -492,20 +462,16 @@
         async function cargarVentas() {
             const { data, error } = await sb.from('ventas').select('*').order('fecha', { ascending: false });
             if (error) return console.error("Error cargando ventas:", error);
-
             let totalIngresos = 0, totalCostos = 0, totalGanancia = 0;
             const tbody = document.getElementById('tabla-ventas-body');
-            tbody.innerHTML = '';
-
+            let htmlVentas = '';
             data.forEach(v => {
                 totalIngresos += v.total_venta;
                 totalCostos += (v.costo * v.cantidad);
                 totalGanancia += v.ganancia;
-
                 const fecha = new Date(v.fecha).toLocaleString('es-CU');
                 const colorMoneda = v.moneda === 'USD' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300';
-
-                tbody.innerHTML += `
+                htmlVentas += `
                     <tr class="border-b border-gray-700 hover:bg-gray-700">
                         <td class="p-3 text-xs text-gray-400">${fecha}</td>
                         <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorMoneda}">${v.moneda || 'CUP'}</span></td>
@@ -516,7 +482,7 @@
                     </tr>
                 `;
             });
-
+            tbody.innerHTML = htmlVentas;
             document.getElementById('total-ingresos').innerText = totalIngresos.toLocaleString('es-CU') + ' CUP';
             document.getElementById('total-costos').innerText = totalCostos.toLocaleString('es-CU') + ' CUP';
             document.getElementById('total-ganancia-real').innerText = totalGanancia.toLocaleString('es-CU') + ' CUP';
