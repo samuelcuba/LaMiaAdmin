@@ -205,21 +205,19 @@
                     }
                 });
                 
-                if (!response.ok) throw new Error("Error en la respuesta de elToque");
+                if (!response.ok) throw new Error("API no disponible");
                 
                 const data = await response.json();
-                
-                // Buscamos la tasa en minúsculas o mayúsculas por si la API cambia
                 const tasa = data.usd || data.USD || data.tasa || data.tcg?.usd || data.rate;
                 
                 if (tasa && !isNaN(tasa)) {
                     tasaEl.innerText = Math.round(tasa);
                 } else {
-                    tasaEl.innerText = "N/A";
+                    tasaEl.innerText = "660 (Respaldo)";
                 }
             } catch (error) {
-                console.error("No se pudo conectar a elToque:", error);
-                tasaEl.innerText = "Error";
+                console.log("elToque bloqueó el acceso directo (CORS). Usando tasa de respaldo.");
+                tasaEl.innerText = "660 (Respaldo)";
             }
         }
 
