@@ -6,11 +6,12 @@
     <title>Admin - La Mia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librería para comprimir imágenes antes de subirlas (Ahorro de datos) -->
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen p-6">
 
-    <!-- Pantalla de Login (Ahora pide Email y Contraseña) -->
+    <!-- Pantalla de Login -->
     <div id="login-screen" class="max-w-md mx-auto mt-20 bg-gray-800 p-8 rounded-xl shadow-lg text-center">
         <h1 class="text-2xl font-bold mb-4">Panel de Administración 🔒</h1>
         <p class="text-gray-400 mb-4">Ingresa tus credenciales de administrador.</p>
@@ -26,7 +27,6 @@
     <div id="admin-panel" class="hidden max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-red-500">Panel de Administración 🛠️</h1>
-            <!-- Nuevo botón para salir -->
             <button onclick="cerrarSesion()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm">🚪 Cerrar Sesión</button>
         </div>
 
@@ -217,10 +217,10 @@
         // --- CERRAR SESIÓN ---
         async function cerrarSesion() {
             await sb.auth.signOut();
-            location.reload(); // Recarga la página para mostrar el login
+            location.reload(); 
         }
 
-        // --- INICIAR PANEL (Cargar datos) ---
+        // --- INICIAR PANEL ---
         function iniciarPanel() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('admin-panel').classList.remove('hidden');
@@ -313,31 +313,25 @@
                     for (const p of datos) {
                         let imgURL = p.img || "";
                         if (!idsExistentes.has(p.id)) {
-                        if (p.imagenBase64) {
-                            try {
-                                // 1. Convertir Base64 a File
-                                const fileNameTemp = `prod_${p.id}_${Date.now()}.jpg`;
-                                let imgFile = base64ToFile(p.imagenBase64, fileNameTemp);
-                                
-                                // 2. Comprimir la imagen antes de subirla
-                                const options = {
-                                    maxSizeMB: 0.2,
-                                    maxWidthOrHeight: 800,
-                                    useWebWorker: true
-                                };
-                                const compressedFile = await imageCompression(imgFile, options);
+                            if (p.imagenBase64) {
+                                try {
+                                    const fileNameTemp = `prod_${p.id}_${Date.now()}.jpg`;
+                                    let imgFile = base64ToFile(p.imagenBase64, fileNameTemp);
+                                    
+                                    const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
+                                    const compressedFile = await imageCompression(imgFile, options);
 
-                                // 3. Subir comprimida
-                                const { error: upError } = await sb.storage.from('imagenes').upload(compressedFile.name, compressedFile);
-                                if (!upError) {
-                                    const { data } = sb.storage.from('imagenes').getPublicUrl(compressedFile.name);
-                                    imgURL = data.publicUrl;
+                                    const { error: upError } = await sb.storage.from('imagenes').upload(compressedFile.name, compressedFile);
+                                    if (!upError) {
+                                        const { data } = sb.storage.from('imagenes').getPublicUrl(compressedFile.name);
+                                        imgURL = data.publicUrl;
+                                    }
+                                } catch (imgErr) {
+                                    console.error("Error convirtiendo imagen:", imgErr);
                                 }
-                            } catch (imgErr) {
-                                console.error("Error convirtiendo imagen:", imgErr);
+                            } else if (p.imagenPath) {
+                                imgURL = p.imagenPath;
                             }
-                        } else if (p.imagenPath) {
-                            imgURL = p.imagenPath;
                         }
                         const productoData = {
                             id: p.id, nombre: p.nombreProducto || p.nombre, costo: p.precioCosto || p.costo || 0,
@@ -396,13 +390,11 @@
             if (fileInput.files.length === 0) return null;
             const file = fileInput.files[0];
 
-            // Mostramos un mensaje de que está comprimiendo
             const preview = document.getElementById('img-preview');
             preview.classList.remove('hidden');
             preview.src = URL.createObjectURL(file);
             
             try {
-                // 1. Comprimir la imagen (máximo 800px de ancho y 200KB de peso)
                 const options = {
                     maxSizeMB: 0.2,
                     maxWidthOrHeight: 800,
@@ -410,7 +402,6 @@
                 };
                 const compressedFile = await imageCompression(file, options);
 
-                // 2. Subir la imagen comprimida a Supabase
                 const fileName = `combo_${Date.now()}.jpg`;
                 const { error } = await sb.storage.from('imagenes').upload(fileName, compressedFile, { contentType: 'image/jpeg' });
                 if (error) throw error;
