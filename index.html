@@ -9,22 +9,28 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen p-6">
 
-    <!-- Pantalla de Login -->
+    <!-- Pantalla de Login (Ahora pide Email y Contraseña) -->
     <div id="login-screen" class="max-w-md mx-auto mt-20 bg-gray-800 p-8 rounded-xl shadow-lg text-center">
         <h1 class="text-2xl font-bold mb-4">Panel de Administración 🔒</h1>
-        <p class="text-gray-400 mb-4">Ingresa la contraseña para administrar la tienda.</p>
+        <p class="text-gray-400 mb-4">Ingresa tus credenciales de administrador.</p>
+        
+        <input type="email" id="email" class="w-full p-2 rounded text-black text-center mb-3" placeholder="Correo electrónico">
         <input type="password" id="password" class="w-full p-2 rounded text-black text-center" placeholder="Contraseña">
+        
         <button onclick="login()" class="mt-4 bg-red-600 hover:bg-red-700 w-full py-2 rounded font-bold">Entrar</button>
-        <p id="error-msg" class="text-red-400 mt-2 hidden">Contraseña incorrecta.</p>
+        <p id="error-msg" class="text-red-400 mt-2 hidden">Correo o contraseña incorrectos.</p>
     </div>
 
     <!-- Panel Real -->
     <div id="admin-panel" class="hidden max-w-5xl mx-auto">
-        <h1 class="text-3xl font-bold text-red-500 mb-6">Panel de Administración 🛠️</h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-red-500">Panel de Administración 🛠️</h1>
+            <!-- Nuevo botón para salir -->
+            <button onclick="cerrarSesion()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm">🚪 Cerrar Sesión</button>
+        </div>
 
         <!-- Configuración Rápida (Mantenimiento y Tasa USD) -->
         <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Mantenimiento -->
             <div class="p-4 bg-gray-800 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-white">Estado de la Tienda</h3>
@@ -35,7 +41,6 @@
                 </button>
             </div>
 
-            <!-- Tasa de Cambio USD -->
             <div class="p-4 bg-blue-900/50 border border-blue-700 rounded-xl flex justify-between items-center gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-white">Tasa de Cambio USD</h3>
@@ -175,26 +180,53 @@
         const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const PASSWORD_ADMIN = "admin123"; // ¡CAMBIA ESTA CONTRASEÑA!
 
         let editandoId = null;
         let mantenimientoActivo = false;
         let productosCache = []; 
         let timeoutBusquedaAdmin = null; 
 
-        // --- LOGIN ---
-        function login() {
-            const pass = document.getElementById('password').value;
-            if (pass === PASSWORD_ADMIN) {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('admin-panel').classList.remove('hidden');
-                cargarProductos();
-                cargarVentas();
-                verificarMantenimiento();
-                cargarTasaActual();
-            } else {
-                document.getElementById('error-msg').classList.remove('hidden');
+        // --- VERIFICAR SESIÓN AL CARGAR LA PÁGINA ---
+        window.onload = async function() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                iniciarPanel();
             }
+        };
+
+        // --- LOGIN CON SUPABASE AUTH ---
+        async function login() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+            
+            const { data, error } = await sb.auth.signInWithPassword({
+                email: email,
+                password: pass
+            });
+
+            if (error) {
+                errorMsg.classList.remove('hidden');
+                errorMsg.innerText = "Correo o contraseña incorrectos.";
+            } else {
+                iniciarPanel();
+            }
+        }
+
+        // --- CERRAR SESIÓN ---
+        async function cerrarSesion() {
+            await sb.auth.signOut();
+            location.reload(); // Recarga la página para mostrar el login
+        }
+
+        // --- INICIAR PANEL (Cargar datos) ---
+        function iniciarPanel() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+            cargarProductos();
+            cargarVentas();
+            verificarMantenimiento();
+            cargarTasaActual();
         }
 
         // --- TASA DE CAMBIO USD ---
