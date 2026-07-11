@@ -6,7 +6,6 @@
     <title>Admin - La Mia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Librería para comprimir imágenes antes de subirlas (Ahorro de datos) -->
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen p-6">
@@ -15,10 +14,8 @@
     <div id="login-screen" class="max-w-md mx-auto mt-20 bg-gray-800 p-8 rounded-xl shadow-lg text-center">
         <h1 class="text-2xl font-bold mb-4">Panel de Administración 🔒</h1>
         <p class="text-gray-400 mb-4">Ingresa tus credenciales de administrador.</p>
-        
         <input type="email" id="email" class="w-full p-2 rounded text-black text-center mb-3" placeholder="Correo electrónico">
         <input type="password" id="password" class="w-full p-2 rounded text-black text-center" placeholder="Contraseña">
-        
         <button onclick="login()" class="mt-4 bg-red-600 hover:bg-red-700 w-full py-2 rounded font-bold">Entrar</button>
         <p id="error-msg" class="text-red-400 mt-2 hidden">Correo o contraseña incorrectos.</p>
     </div>
@@ -30,18 +27,15 @@
             <button onclick="cerrarSesion()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm">🚪 Cerrar Sesión</button>
         </div>
 
-        <!-- Configuración Rápida (Mantenimiento, Tasa USD y Canal) -->
+        <!-- Configuración Rápida -->
         <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="p-4 bg-gray-800 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-white">Estado de la Tienda</h3>
                     <p class="text-gray-400 text-sm" id="texto-estado-tienda">Tienda Abierta al público</p>
                 </div>
-                <button onclick="toggleMantenimiento()" id="btn-mantenimiento" class="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded-lg font-bold w-full sm:w-auto">
-                    🛠️ Activar Mantenimiento
-                </button>
+                <button onclick="toggleMantenimiento()" id="btn-mantenimiento" class="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded-lg font-bold w-full sm:w-auto">🛠️ Activar Mantenimiento</button>
             </div>
-
             <div class="p-4 bg-blue-900/50 border border-blue-700 rounded-xl flex justify-between items-center gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-white">Tasa de Cambio USD</h3>
@@ -52,8 +46,6 @@
                     <button onclick="guardarTasa()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-bold text-sm">💾</button>
                 </div>
             </div>
-
-            <!-- CANAL DE PEDIDOS -->
             <div class="p-4 bg-gray-800 rounded-xl flex justify-between items-center gap-4">
                 <div class="w-full">
                     <h3 class="text-lg font-bold text-white">Canal de Pedidos</h3>
@@ -81,27 +73,12 @@
             <h2 id="form-title" class="text-xl font-bold mb-4">Agregar Nuevo Producto Manualmente</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="hidden" id="edit-id">
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Nombre</label>
-                    <input type="text" id="nombre" class="w-full p-2 rounded text-black">
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Categoría</label>
-                    <input type="text" id="categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Bebidas">
-                </div>
+                <div><label class="block text-sm text-gray-400 mb-1">Nombre</label><input type="text" id="nombre" class="w-full p-2 rounded text-black"></div>
+                <div><label class="block text-sm text-gray-400 mb-1">Categoría</label><input type="text" id="categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Bebidas"></div>
                 <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Costo</label>
-                        <input type="number" id="costo" class="w-full p-2 rounded text-black">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Venta</label>
-                        <input type="number" id="venta" class="w-full p-2 rounded text-black">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Stock</label>
-                        <input type="number" id="existencia" class="w-full p-2 rounded text-black" value="0">
-                    </div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Costo</label><input type="number" id="costo" class="w-full p-2 rounded text-black"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Venta</label><input type="number" id="venta" class="w-full p-2 rounded text-black"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Stock</label><input type="number" id="existencia" class="w-full p-2 rounded text-black" value="0"></div>
                 </div>
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Imagen del Producto</label>
@@ -116,564 +93,209 @@
             </div>
         </div>
 
-        <!-- TABLA PRODUCTOS CON FILTROS Y EXPORTAR -->
+        <!-- TABLA PRODUCTOS -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <h2 class="text-xl font-bold text-red-400">Inventario Actual</h2>
             <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
                 <input type="text" id="input-buscar" placeholder="🔍 Buscar..." class="p-2 rounded text-black text-sm w-full" oninput="buscarConRetraso()">
                 <div class="flex gap-3 w-full sm:w-auto">
                     <select id="filtro-stock" class="p-2 rounded text-black text-sm flex-1" onchange="renderizarTablaProductos()">
-                        <option value="todos">Stock: Todos</option>
-                        <option value="con">Stock: Con</option>
-                        <option value="sin">Stock: Agotados</option>
+                        <option value="todos">Stock: Todos</option><option value="con">Stock: Con</option><option value="sin">Stock: Agotados</option>
                     </select>
                     <select id="filtro-img" class="p-2 rounded text-black text-sm flex-1" onchange="renderizarTablaProductos()">
-                        <option value="todas">Img: Todas</option>
-                        <option value="con">Img: Con</option>
-                        <option value="sin">Img: Sin</option>
+                        <option value="todas">Img: Todas</option><option value="con">Img: Con</option><option value="sin">Img: Sin</option>
                     </select>
-                    <button onclick="exportarExcel()" class="bg-green-700 hover:bg-green-800 px-4 py-2 rounded font-bold text-sm whitespace-nowrap flex items-center gap-2">
-                        📊 Excel
-                    </button>
+                    <button onclick="exportarExcel()" class="bg-green-700 hover:bg-green-800 px-4 py-2 rounded font-bold text-sm whitespace-nowrap flex items-center gap-2">📊 Excel</button>
                 </div>
             </div>
         </div>
-
         <div class="overflow-x-auto bg-gray-800 rounded-xl mb-12">
             <table class="w-full text-left">
-                <thead>
-                    <tr class="border-b border-gray-700 text-gray-400">
-                        <th class="p-3">Producto</th>
-                        <th class="p-3">Costo</th>
-                        <th class="p-3">Venta</th>
-                        <th class="p-3">Stock</th>
-                        <th class="p-3">Acciones</th>
-                    </tr>
-                </thead>
+                <thead><tr class="border-b border-gray-700 text-gray-400">
+                    <th class="p-3">Producto</th><th class="p-3">Costo</th><th class="p-3">Venta</th><th class="p-3">Stock</th><th class="p-3">Acciones</th>
+                </tr></thead>
                 <tbody id="tabla-body"></tbody>
             </table>
         </div>
 
-        <!-- HISTORIAL DE VENTAS Y FINANZAS -->
-        <h2 class="text-3xl font-bold text-green-500 mt-12 mb-6">Estado Financiero 💰</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-green-900/50 border border-green-700 p-4 rounded-lg text-center">
-                <h3 class="text-sm text-green-300 uppercase">Ingresos Totales</h3>
-                <p class="text-2xl font-extrabold text-green-400" id="total-ingresos">0 CUP</p>
+        <!-- FINANZAS Y CUPONES -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div>
+                <h2 class="text-3xl font-bold text-green-500 mt-12 mb-6">Estado Financiero 💰</h2>
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                    <div class="bg-green-900/50 border border-green-700 p-4 rounded-lg text-center">
+                        <h3 class="text-sm text-green-300 uppercase">Ingresos Totales</h3>
+                        <p class="text-2xl font-extrabold text-green-400" id="total-ingresos">0 CUP</p>
+                    </div>
+                    <div class="bg-red-900/50 border border-red-700 p-4 rounded-lg text-center">
+                        <h3 class="text-sm text-red-300 uppercase">Costo de Ventas</h3>
+                        <p class="text-2xl font-extrabold text-red-400" id="total-costos">0 CUP</p>
+                    </div>
+                    <div class="bg-yellow-900/50 border border-yellow-700 p-4 rounded-lg text-center">
+                        <h3 class="text-sm text-yellow-300 uppercase">Ganancia Real</h3>
+                        <p class="text-2xl font-extrabold text-yellow-400" id="total-ganancia-real">0 CUP</p>
+                    </div>
+                </div>
             </div>
-            <div class="bg-red-900/50 border border-red-700 p-4 rounded-lg text-center">
-                <h3 class="text-sm text-red-300 uppercase">Costo de Ventas</h3>
-                <p class="text-2xl font-extrabold text-red-400" id="total-costos">0 CUP</p>
-            </div>
-            <div class="bg-yellow-900/50 border border-yellow-700 p-4 rounded-lg text-center">
-                <h3 class="text-sm text-yellow-300 uppercase">Ganancia Real</h3>
-                <p class="text-2xl font-extrabold text-yellow-400" id="total-ganancia-real">0 CUP</p>
+
+            <!-- GESTIÓN DE CUPONES (NUEVO) -->
+            <div>
+                <h2 class="text-3xl font-bold text-purple-500 mt-12 mb-6">Gestión de Cupones 🎟️</h2>
+                <div class="p-4 bg-gray-800 rounded-xl mb-4">
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="text" id="cupon-codigo" placeholder="Código (Ej: EXTRA10)" class="col-span-2 p-2 rounded text-black text-sm">
+                        <input type="number" id="cupon-porcentaje" placeholder="% Desc" class="p-2 rounded text-black text-sm">
+                    </div>
+                    <button onclick="crearCupon()" class="bg-purple-600 hover:bg-purple-700 w-full py-2 rounded font-bold text-sm mt-2">➕ Crear Cupón</button>
+                </div>
+                <div class="overflow-x-auto bg-gray-800 rounded-xl">
+                    <table class="w-full text-left">
+                        <thead><tr class="border-b border-gray-700 text-gray-400">
+                            <th class="p-3">Código</th><th class="p-3">Descuento</th><th class="p-3">Acción</th>
+                        </tr></thead>
+                        <tbody id="tabla-cupones-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
+        <!-- HISTORIAL DE VENTAS -->
+        <h2 class="text-3xl font-bold text-green-500 mt-12 mb-6">Historial de Ventas 📝</h2>
         <div class="overflow-x-auto bg-gray-800 rounded-xl">
             <table class="w-full text-left">
-                <thead>
-                    <tr class="border-b border-gray-700 text-gray-400">
-                        <th class="p-3">Fecha</th>
-                        <th class="p-3">Moneda</th>
-                        <th class="p-3">Producto</th>
-                        <th class="p-3">Cant.</th>
-                        <th class="p-3">Ingreso</th>
-                        <th class="p-3">Ganancia</th>
-                    </tr>
-                </thead>
+                <thead><tr class="border-b border-gray-700 text-gray-400">
+                    <th class="p-3">Fecha</th><th class="p-3">Moneda</th><th class="p-3">Producto</th><th class="p-3">Cant.</th><th class="p-3">Ingreso</th><th class="p-3">Ganancia</th>
+                </tr></thead>
                 <tbody id="tabla-ventas-body"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN ---
         const SUPABASE_URL = 'https://xwaodoprvfzzszohyrlh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let editandoId = null;
-        let mantenimientoActivo = false;
-        let productosCache = []; 
-        let timeoutBusquedaAdmin = null; 
+        let editandoId = null, mantenimientoActivo = false, productosCache = [], timeoutBusquedaAdmin = null; 
 
-        // --- VERIFICAR SESIÓN AL CARGAR LA PÁGINA ---
         window.onload = async function() {
             const { data: { session } } = await sb.auth.getSession();
-            if (session) {
-                iniciarPanel();
-            }
+            if (session) iniciarPanel();
         };
 
-        // --- LOGIN CON SUPABASE AUTH ---
         async function login() {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            const errorMsg = document.getElementById('error-msg');
-            
-            const { data, error } = await sb.auth.signInWithPassword({
-                email: email,
-                password: pass
-            });
-
-            if (error) {
-                errorMsg.classList.remove('hidden');
-                errorMsg.innerText = "Correo o contraseña incorrectos.";
-            } else {
-                iniciarPanel();
-            }
+            const email = document.getElementById('email').value, pass = document.getElementById('password').value, errorMsg = document.getElementById('error-msg');
+            const { data, error } = await sb.auth.signInWithPassword({ email: email, password: pass });
+            if (error) { errorMsg.classList.remove('hidden'); errorMsg.innerText = "Correo o contraseña incorrectos."; } 
+            else iniciarPanel();
         }
 
-        // --- CERRAR SESIÓN ---
-        async function cerrarSesion() {
-            await sb.auth.signOut();
-            location.reload(); 
-        }
+        async function cerrarSesion() { await sb.auth.signOut(); location.reload(); }
 
-        // --- INICIAR PANEL ---
         function iniciarPanel() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('admin-panel').classList.remove('hidden');
-            cargarProductos();
-            cargarVentas();
-            verificarMantenimiento();
-            cargarTasaActual();
-            cargarCanalActual();
+            cargarProductos(); cargarVentas(); verificarMantenimiento(); cargarTasaActual(); cargarCanalActual(); cargarCupones();
         }
 
-        // --- TASA DE CAMBIO USD ---
-        async function cargarTasaActual() {
-            const { data } = await sb.from('ajustes').select('tasa_usd').eq('id', 1).single();
-            if (data && data.tasa_usd) {
-                document.getElementById('input-tasa-usd').value = data.tasa_usd;
-            }
-        }
+        // --- TASA USD ---
+        async function cargarTasaActual() { const { data } = await sb.from('ajustes').select('tasa_usd').eq('id', 1).single(); if (data && data.tasa_usd) document.getElementById('input-tasa-usd').value = data.tasa_usd; }
+        async function guardarTasa() { const t = parseFloat(document.getElementById('input-tasa-usd').value); if (isNaN(t) || t <= 0) return; const { error } = await sb.from('ajustes').update({ tasa_usd: t }).eq('id', 1); if (error) return alert("Error"); alert("✅ Tasa actualizada."); }
 
-        async function guardarTasa() {
-            const nuevaTasa = parseFloat(document.getElementById('input-tasa-usd').value);
-            if (isNaN(nuevaTasa) || nuevaTasa <= 0) return alert("Introduce un valor válido.");
-            const { error } = await sb.from('ajustes').update({ tasa_usd: nuevaTasa }).eq('id', 1);
-            if (error) return alert("Error al guardar la tasa.");
-            alert("✅ Tasa actualizada.");
-        }
+        // --- CANAL PEDIDOS ---
+        async function cargarCanalActual() { const { data } = await sb.from('ajustes').select('canal_pedido, telegram_user').eq('id', 1).single(); if (data) { document.getElementById('select-canal').value = data.canal_pedido || 'whatsapp'; cambiarCanal(); if (data.telegram_user) document.getElementById('input-telegram-user').value = data.telegram_user; } }
+        function cambiarCanal() { const c = document.getElementById('select-canal').value; const tDiv = document.getElementById('input-telegram-user'); const btn = document.getElementById('btn-guardar-telegram'); if (c === 'telegram') { tDiv.classList.remove('hidden'); btn.classList.remove('hidden'); } else { tDiv.classList.add('hidden'); btn.classList.add('hidden'); guardarCanalWhatsApp(); } }
+        async function guardarCanalWhatsApp() { const { error } = await sb.from('ajustes').update({ canal_pedido: 'whatsapp' }).eq('id', 1); if (error) alert("Error"); else alert("✅ Canal cambiado a WhatsApp."); }
+        async function guardarTelegram() { const u = document.getElementById('input-telegram-user').value.replace('@', '').trim(); if (!u) return alert("Escribe tu usuario."); const { error } = await sb.from('ajustes').update({ canal_pedido: 'telegram', telegram_user: u }).eq('id', 1); if (error) return alert("Error"); alert("✅ Canal actualizado a Telegram."); }
 
-        // --- CANAL DE PEDIDOS (TELEGRAM / WHATSAPP) ---
-        async function cargarCanalActual() {
-            const { data } = await sb.from('ajustes').select('canal_pedido, telegram_user').eq('id', 1).single();
-            if (data) {
-                document.getElementById('select-canal').value = data.canal_pedido || 'whatsapp';
-                cambiarCanal(); 
-                if (data.telegram_user) {
-                    document.getElementById('input-telegram-user').value = data.telegram_user;
-                }
-            }
-        }
-
-        function cambiarCanal() {
-            const canal = document.getElementById('select-canal').value;
-            const telegramDiv = document.getElementById('input-telegram-user');
-            const btnGuardar = document.getElementById('btn-guardar-telegram');
-            
-            if (canal === 'telegram') {
-                telegramDiv.classList.remove('hidden');
-                btnGuardar.classList.remove('hidden');
-            } else {
-                telegramDiv.classList.add('hidden');
-                btnGuardar.classList.add('hidden');
-                guardarCanalWhatsApp();
-            }
-        }
-
-        async function guardarCanalWhatsApp() {
-            const { error } = await sb.from('ajustes').update({ canal_pedido: 'whatsapp' }).eq('id', 1);
-            if (error) {
-                alert("Error al guardar el canal.");
-            } else {
-                alert("✅ Canal cambiado a WhatsApp.");
-            }
-        }
-
-        async function guardarTelegram() {
-            const usuario = document.getElementById('input-telegram-user').value.replace('@', '').trim();
-            if (!usuario) return alert("Por favor escribe tu usuario de Telegram.");
-            const { error } = await sb.from('ajustes').update({ canal_pedido: 'telegram', telegram_user: usuario }).eq('id', 1);
-            if (error) return alert("Error al guardar el canal.");
-            alert("✅ Canal de pedidos actualizado a Telegram.");
-        }
-
-        // --- EXPORTAR A EXCEL (CSV) ---
-        function exportarExcel() {
-            if (productosCache.length === 0) return alert("No hay productos para exportar.");
-            let csvContent = "\uFEFFID,Nombre,Categoría,Costo,Venta,Stock Actual,Conteo Físico,Diferencia\n";
-            productosCache.forEach(p => {
-                let nombre = `"${p.nombre.replace(/"/g, '""')}"`;
-                let categoria = `"${p.categoria.replace(/"/g, '""')}"`;
-                csvContent += `${p.id},${nombre},${categoria},${p.costo || 0},${p.venta || 0},${p.existencia || 0},,\n`;
+        // --- CUPONES ---
+        async function cargarCupones() {
+            const { data, error } = await sb.from('cupones').select('*').order('codigo', { ascending: true });
+            const tbody = document.getElementById('tabla-cupones-body');
+            if (error || !data) return tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500">No hay cupones.</td></tr>`;
+            let html = '';
+            data.forEach(c => {
+                html += `<tr class="border-b border-gray-700"><td class="p-3 font-bold text-purple-400">${c.codigo}</td><td class="p-3">${c.porcentaje}%</td><td class="p-3"><button onclick="eliminarCupon('${c.codigo}')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️ Eliminar</button></td></tr>`;
             });
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "inventario_fisico_la_mia.csv");
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            tbody.innerHTML = html;
         }
-
-        // --- HELPERS PARA IMÁGENES (IMPORTACIÓN JSON) ---
-        function base64ToFile(base64String, filename) {
-            let cleanBase64 = base64String.replace(/\n/g, '').trim();
-            let mime = 'image/jpeg';
-            let bstr;
-            if (cleanBase64.startsWith('data:')) {
-                const arr = cleanBase64.split(',');
-                mime = arr[0].match(/:(.*?);/)[1];
-                bstr = atob(arr[1]);
-            } else {
-                bstr = atob(cleanBase64);
-            }
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while(n--){
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new File([u8arr], filename, {type:mime});
+        async function crearCupon() {
+            const cod = document.getElementById('cupon-codigo').value.toUpperCase().trim();
+            const porc = parseFloat(document.getElementById('cupon-porcentaje').value);
+            if (!cod || isNaN(porc) || porc <= 0 || porc > 100) return alert("Código o porcentaje inválido.");
+            const { error } = await sb.from('cupones').insert([{ codigo: cod, porcentaje: porc, activo: true }]);
+            if (error) return alert("Error: Es posible que el código ya exista.");
+            document.getElementById('cupon-codigo').value = ''; document.getElementById('cupon-porcentaje').value = '';
+            cargarCupones(); alert("✅ Cupón creado.");
         }
-
-        async function procesarJSON() {
-            const fileInput = document.getElementById('json-file-input');
-            const statusEl = document.getElementById('json-status');
-            if (fileInput.files.length === 0) return alert("Por favor selecciona un archivo JSON.");
-            statusEl.innerText = "Leyendo archivo...";
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const json = JSON.parse(e.target.result);
-                    const datos = json.datos || json;
-                    statusEl.innerText = "Verificando productos existentes...";
-                    let idsExistentes = new Set();
-                    let from = 0;
-                    while(true) {
-                        const { data: pageData } = await sb.from('productos').select('id').range(from, from + 999);
-                        if (!pageData || pageData.length === 0) break;
-                        pageData.forEach(p => idsExistentes.add(p.id));
-                        if (pageData.length < 1000) break;
-                        from += 1000;
-                    }
-                    const nuevosProductos = [];
-                    const productosParaActualizar = [];
-                    statusEl.innerText = `Procesando ${datos.length} productos...`;
-                    for (const p of datos) {
-                        let imgURL = p.img || "";
-                        if (!idsExistentes.has(p.id)) {
-                            if (p.imagenBase64) {
-                                try {
-                                    const fileNameTemp = `prod_${p.id}_${Date.now()}.jpg`;
-                                    let imgFile = base64ToFile(p.imagenBase64, fileNameTemp);
-                                    
-                                    const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
-                                    const compressedFile = await imageCompression(imgFile, options);
-
-                                    const { error: upError } = await sb.storage.from('imagenes').upload(compressedFile.name, compressedFile);
-                                    if (!upError) {
-                                        const { data } = sb.storage.from('imagenes').getPublicUrl(compressedFile.name);
-                                        imgURL = data.publicUrl;
-                                    }
-                                } catch (imgErr) {
-                                    console.error("Error convirtiendo imagen:", imgErr);
-                                }
-                            } else if (p.imagenPath) {
-                                imgURL = p.imagenPath;
-                            }
-                        }
-                        const productoData = {
-                            id: p.id, nombre: p.nombreProducto || p.nombre, costo: p.precioCosto || p.costo || 0,
-                            venta: p.precio || p.venta || 0, existencia: p.stockActual || p.existencia || 0,
-                            categoria: p.categoria || "OTRO", img: imgURL
-                        };
-                        if (idsExistentes.has(p.id)) {
-                            productosParaActualizar.push({ id: productoData.id, costo: productoData.costo, venta: productoData.venta, existencia: productoData.existencia });
-                        } else {
-                            nuevosProductos.push(productoData);
-                        }
-                        statusEl.innerText = `Preparando productos... (${nuevosProductos.length + productosParaActualizar.length}/${datos.length})`;
-                    }
-                    statusEl.innerText = `Subiendo a Supabase...`;
-                    const chunkSize = 5;
-                    let errores = 0;
-                    for (let i = 0; i < nuevosProductos.length; i += chunkSize) {
-                        const chunk = nuevosProductos.slice(i, i + chunkSize);
-                        const { error } = await sb.from('productos').insert(chunk);
-                        if (error) { console.error("Error insert:", error); errores++; }
-                        statusEl.innerText = `Insertando nuevos... (${i + chunk.length}/${nuevosProductos.length})`;
-                    }
-                    for (let i = 0; i < productosParaActualizar.length; i += chunkSize) {
-                        const chunk = productosParaActualizar.slice(i, i + chunkSize);
-                        const { error } = await sb.from('productos').upsert(chunk, { onConflict: 'id' });
-                        if (error) { console.error("Error update:", error); errores++; }
-                        statusEl.innerText = `Actualizando existentes... (${i + chunk.length}/${productosParaActualizar.length})`;
-                    }
-                    if (errores > 0) {
-                        statusEl.innerText = `Importación completada con ${errores} errores.`;
-                    } else {
-                        statusEl.innerText = `¡Éxito! ${nuevosProductos.length} nuevos, ${productosParaActualizar.length} actualizados.`;
-                        alert("¡Sincronización completada con éxito!");
-                    }
-                    cargarProductos();
-                    fileInput.value = "";
-                } catch (err) {
-                    statusEl.innerText = "Error al leer el JSON.";
-                    alert("Error al leer el JSON: " + err.message);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function previsualizarImagen() {
-            const file = document.getElementById('img-file').files[0];
-            if (file) {
-                document.getElementById('img-preview').src = URL.createObjectURL(file);
-                document.getElementById('img-preview').classList.remove('hidden');
-            }
-        }
-
-        // --- SUBIR Y COMPRIMIR IMAGEN ---
-        async function subirImagenSupabase() {
-            const fileInput = document.getElementById('img-file');
-            if (fileInput.files.length === 0) return null;
-            const file = fileInput.files[0];
-
-            const preview = document.getElementById('img-preview');
-            preview.classList.remove('hidden');
-            preview.src = URL.createObjectURL(file);
-            
-            try {
-                const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
-                const compressedFile = await imageCompression(file, options);
-
-                const fileName = `combo_${Date.now()}.jpg`;
-                const { error } = await sb.storage.from('imagenes').upload(fileName, compressedFile, { contentType: 'image/jpeg' });
-                if (error) throw error;
-                
-                const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
-                return data.publicUrl;
-            } catch (error) {
-                console.error("Error al comprimir/subir:", error);
-                alert("Hubo un error al procesar la imagen.");
-                return null;
-            }
-        }
-
-        // --- CARGAR Y RENDERIZAR PRODUCTOS ---
-        async function cargarProductos() {
-            const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true });
-            if (error) return alert("Error al cargar");
-            productosCache = data;
-            renderizarTablaProductos();
-        }
-
-        function buscarConRetraso() {
-            clearTimeout(timeoutBusquedaAdmin);
-            timeoutBusquedaAdmin = setTimeout(() => {
-                renderizarTablaProductos();
-            }, 250);
-        }
-
-        function renderizarTablaProductos() {
-            const buscar = document.getElementById('input-buscar').value.toLowerCase();
-            const filtroStock = document.getElementById('filtro-stock').value;
-            const filtroImg = document.getElementById('filtro-img').value;
-            
-            const tbody = document.getElementById('tabla-body');
-            
-            const productosFiltrados = productosCache.filter(p => {
-                const coincideTexto = p.nombre.toLowerCase().includes(buscar) || (p.categoria && p.categoria.toLowerCase().includes(buscar));
-                
-                let coincideStock = true;
-                if (filtroStock === 'con' && p.existencia <= 0) coincideStock = false;
-                if (filtroStock === 'sin' && p.existencia > 0) coincideStock = false;
-
-                let coincideImg = true;
-                const tieneImg = p.img && p.img.trim() !== '';
-                if (filtroImg === 'con' && !tieneImg) coincideImg = false;
-                if (filtroImg === 'sin' && tieneImg) coincideImg = false;
-                
-                return coincideTexto && coincideStock && coincideImg;
-            });
-
-            if(productosFiltrados.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">No se encontraron productos.</td></tr>`;
-                return;
-            }
-
-            let htmlAcumulado = '';
-            productosFiltrados.forEach(p => {
-                htmlAcumulado += `
-                    <tr class="border-b border-gray-700 hover:bg-gray-700">
-                        <td class="p-3">
-                            <img src="${p.img || 'https://via.placeholder.com/40?text=Sin+Img'}" loading="lazy" class="w-10 h-10 rounded inline-block mr-2 object-cover bg-gray-600">
-                            <span class="font-bold">${p.nombre}</span><br>
-                            <span class="text-xs text-gray-400">${p.categoria}</span>
-                        </td>
-                        <td class="p-3 text-gray-400">${p.costo || 0}</td>
-                        <td class="p-3 text-green-400 font-bold">${p.venta}</td>
-                        <td class="p-3 ${p.existencia <= 0 ? 'text-red-500' : 'text-white'} font-bold">${p.existencia || 0}</td>
-                        <td class="p-3 flex gap-2">
-                            <button onclick="editarProducto(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️ Editar</button>
-                            <button onclick="eliminarProducto(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️ Eliminar</button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = htmlAcumulado;
-        }
-
-        // --- GUARDAR ---
-        async function guardarProducto() {
-            const id = document.getElementById('edit-id').value;
-            const nombre = document.getElementById('nombre').value;
-            const costo = parseInt(document.getElementById('costo').value) || 0;
-            const venta = parseInt(document.getElementById('venta').value) || 0;
-            const existencia = parseInt(document.getElementById('existencia').value) || 0;
-            const categoria = document.getElementById('categoria').value;
-            if (!nombre || !venta || !categoria) return alert("Faltan datos obligatorios");
-            let imgURL = document.getElementById('img').value;
-            try {
-                if (document.getElementById('img-file').files.length > 0) {
-                    imgURL = await subirImagenSupabase();
-                }
-                if (!imgURL) return alert("Sube o pega una imagen para el producto.");
-                if (editandoId !== null) {
-                    const { error } = await sb.from('productos').update({ nombre, costo, venta, existencia, categoria, img: imgURL }).eq('id', editandoId);
-                    if (error) throw error;
-                    alert("Producto actualizado con éxito");
-                } else {
-                    const { data: maxData } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1);
-                    const nuevoId = maxData.length > 0 ? maxData[0].id + 1 : 1;
-                    const { error } = await sb.from('productos').insert([{ id: nuevoId, nombre, costo, venta, existencia, categoria, img: imgURL }]);
-                    if (error) throw error;
-                    alert("Producto agregado con éxito");
-                }
-                cancelarEdicion();
-                cargarProductos();
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        }
-
-        // --- EDITAR ---
-        function editarProducto(id) {
-            const p = productosCache.find(x => x.id === id);
-            if (!p) return alert("Producto no encontrado");
-            editandoId = id;
-            document.getElementById('edit-id').value = id;
-            document.getElementById('nombre').value = p.nombre;
-            document.getElementById('costo').value = p.costo;
-            document.getElementById('venta').value = p.venta;
-            document.getElementById('existencia').value = p.existencia;
-            document.getElementById('categoria').value = p.categoria;
-            document.getElementById('img').value = p.img;
-            document.getElementById('img-preview').src = p.img;
-            document.getElementById('img-preview').classList.remove('hidden');
-            document.getElementById('form-title').innerText = "Editando: " + p.nombre;
-            document.getElementById('btn-cancelar').classList.remove('hidden');
-            window.scrollTo(0, 0);
-        }
-
-        // --- ELIMINAR ---
-        async function eliminarProducto(id) {
-            if (!confirm("¿Seguro que quieres eliminar este producto de la tienda?")) return;
-            const { error } = await sb.from('productos').delete().eq('id', id);
+        async function eliminarCupon(codigo) {
+            const { error } = await sb.from('cupones').delete().eq('codigo', codigo);
             if (error) return alert("Error al eliminar");
-            cargarProductos();
+            cargarCupones();
         }
 
-        // --- CANCELAR ---
-        function cancelarEdicion() {
-            editandoId = null;
-            document.getElementById('edit-id').value = '';
-            document.getElementById('nombre').value = '';
-            document.getElementById('costo').value = '';
-            document.getElementById('venta').value = '';
-            document.getElementById('existencia').value = '0';
-            document.getElementById('categoria').value = '';
-            document.getElementById('img').value = '';
-            document.getElementById('img-file').value = '';
-            document.getElementById('img-preview').src = '';
-            document.getElementById('img-preview').classList.add('hidden');
-            document.getElementById('form-title').innerText = "Agregar Nuevo Producto";
-            document.getElementById('btn-cancelar').classList.add('hidden');
+        // --- EXPORTAR EXCEL ---
+        function exportarExcel() { if (productosCache.length === 0) return; let c = "\uFEFFID,Nombre,Categoría,Costo,Venta,Stock Actual,Conteo Físico,Diferencia\n"; productosCache.forEach(p => { c += `${p.id},"${p.nombre.replace(/"/g, '""')}","${p.categoria.replace(/"/g, '""')}",${p.costo || 0},${p.venta || 0},${p.existencia || 0},,\n`; }); const b = new Blob([c], { type: 'text/csv;charset=utf-8;' }); const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = "inventario_la_mia.csv"; l.click(); }
+
+        // --- IMÁGENES Y JSON ---
+        function base64ToFile(b, f) { let c = b.replace(/\n/g, '').trim(); let m = 'image/jpeg'; let s; if (c.startsWith('data:')) { const a = c.split(','); m = a[0].match(/:(.*?);/)[1]; s = atob(a[1]); } else s = atob(c); let n = s.length; const u = new Uint8Array(n); while(n--) u[n] = s.charCodeAt(n); return new File([u], f, {type:m}); }
+        async function procesarJSON() {
+            const f = document.getElementById('json-file-input'); const s = document.getElementById('json-status');
+            if (f.files.length === 0) return; s.innerText = "Leyendo..."; const r = new FileReader();
+            r.onload = async function(e) {
+                try {
+                    const j = JSON.parse(e.target.result); const d = j.datos || j; s.innerText = "Verificando..."; let eI = new Set(); let fr = 0;
+                    while(true) { const { data: pD } = await sb.from('productos').select('id').range(fr, fr + 999); if (!pD || pD.length === 0) break; pD.forEach(p => eI.add(p.id)); if (pD.length < 1000) break; fr += 1000; }
+                    const nP = [], aP = []; s.innerText = `Procesando ${d.length}...`;
+                    for (const p of d) {
+                        let iU = p.img || "";
+                        if (!eI.has(p.id)) {
+                            if (p.imagenBase64) { try { const fT = `prod_${p.id}_${Date.now()}.jpg`; let iF = base64ToFile(p.imagenBase64, fT); const o = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true }; const cF = await imageCompression(iF, o); const { error: uE } = await sb.storage.from('imagenes').upload(cF.name, cF); if (!uE) { const { data } = sb.storage.from('imagenes').getPublicUrl(cF.name); iU = data.publicUrl; } } catch (e) {} } else if (p.imagenPath) iU = p.imagenPath;
+                        }
+                        const pD = { id: p.id, nombre: p.nombreProducto || p.nombre, costo: p.precioCosto || p.costo || 0, venta: p.precio || p.venta || 0, existencia: p.stockActual || p.existencia || 0, categoria: p.categoria || "OTRO", img: iU };
+                        if (eI.has(p.id)) aP.push({ id: pD.id, costo: pD.costo, venta: pD.venta, existencia: pD.existencia }); else nP.push(pD);
+                        s.innerText = `Preparando... (${nP.length + aP.length}/${d.length})`;
+                    }
+                    s.innerText = "Subiendo..."; const cS = 5; let er = 0;
+                    for (let i = 0; i < nP.length; i += cS) { const c = nP.slice(i, i + cS); const { error } = await sb.from('productos').insert(c); if (error) er++; s.innerText = `Nuevos (${i+c.length}/${nP.length})`; }
+                    for (let i = 0; i < aP.length; i += cS) { const c = aP.slice(i, i + cS); const { error } = await sb.from('productos').upsert(c, { onConflict: 'id' }); if (error) er++; s.innerText = `Actualizando (${i+c.length}/${aP.length})`; }
+                    s.innerText = er > 0 ? `Completado con ${er} errores.` : `¡Éxito! ${nP.length} nuevos, ${aP.length} actualizados.`;
+                    cargarProductos(); f.value = "";
+                } catch (e) { s.innerText = "Error."; alert("Error: " + e.message); }
+            }; r.readAsText(f.files[0]);
         }
+        function previsualizarImagen() { const f = document.getElementById('img-file').files[0]; if (f) { const p = document.getElementById('img-preview'); p.src = URL.createObjectURL(f); p.classList.remove('hidden'); } }
+        async function subirImagenSupabase() { const fI = document.getElementById('img-file'); if (fI.files.length === 0) return null; const f = fI.files[0]; const p = document.getElementById('img-preview'); p.classList.remove('hidden'); p.src = URL.createObjectURL(f); try { const o = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true }; const cF = await imageCompression(f, o); const fN = `combo_${Date.now()}.jpg`; const { error } = await sb.storage.from('imagenes').upload(fN, cF, { contentType: 'image/jpeg' }); if (error) throw error; const { data } = sb.storage.from('imagenes').getPublicUrl(fN); return data.publicUrl; } catch (e) { alert("Error imagen."); return null; } }
+
+        // --- PRODUCTOS ---
+        async function cargarProductos() { const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true }); if (error) return; productosCache = data; renderizarTablaProductos(); }
+        function buscarConRetraso() { clearTimeout(timeoutBusquedaAdmin); timeoutBusquedaAdmin = setTimeout(() => { renderizarTablaProductos(); }, 250); }
+        function renderizarTablaProductos() {
+            const b = document.getElementById('input-buscar').value.toLowerCase(), fS = document.getElementById('filtro-stock').value, fI = document.getElementById('filtro-img').value; const t = document.getElementById('tabla-body');
+            const f = productosCache.filter(p => { const cT = p.nombre.toLowerCase().includes(b) || (p.categoria && p.categoria.toLowerCase().includes(b)); let cS = true; if (fS === 'con' && p.existencia <= 0) cS = false; if (fS === 'sin' && p.existencia > 0) cS = false; let cI = true; const tI = p.img && p.img.trim() !== ''; if (fI === 'con' && !tI) cI = false; if (fI === 'sin' && tI) cI = false; return cT && cS && cI; });
+            if(f.length === 0) return t.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Sin resultados.</td></tr>`;
+            let h = ''; f.forEach(p => { h += `<tr class="border-b border-gray-700 hover:bg-gray-700"><td class="p-3"><img src="${p.img || 'https://via.placeholder.com/40?text=Sin+Img'}" loading="lazy" class="w-10 h-10 rounded inline-block mr-2 object-cover bg-gray-600"><span class="font-bold">${p.nombre}</span><br><span class="text-xs text-gray-400">${p.categoria}</span></td><td class="p-3 text-gray-400">${p.costo || 0}</td><td class="p-3 text-green-400 font-bold">${p.venta}</td><td class="p-3 ${p.existencia <= 0 ? 'text-red-500' : 'text-white'} font-bold">${p.existencia || 0}</td><td class="p-3 flex gap-2"><button onclick="editarProducto(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button><button onclick="eliminarProducto(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button></td></tr>`; });
+            t.innerHTML = h;
+        }
+        async function guardarProducto() {
+            const id = document.getElementById('edit-id').value, n = document.getElementById('nombre').value, c = parseInt(document.getElementById('costo').value) || 0, v = parseInt(document.getElementById('venta').value) || 0, e = parseInt(document.getElementById('existencia').value) || 0, cat = document.getElementById('categoria').value; if (!n || !v || !cat) return; let iU = document.getElementById('img').value;
+            try { if (document.getElementById('img-file').files.length > 0) iU = await subirImagenSupabase(); if (!iU) return; if (editandoId !== null) { const { error } = await sb.from('productos').update({ nombre: n, costo: c, venta: v, existencia: e, categoria: cat, img: iU }).eq('id', editandoId); if (error) throw error; alert("Actualizado"); } else { const { data: mD } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1); const nI = mD.length > 0 ? mD[0].id + 1 : 1; const { error } = await sb.from('productos').insert([{ id: nI, nombre: n, costo: c, venta: v, existencia: e, categoria: cat, img: iU }]); if (error) throw error; alert("Agregado"); } cancelarEdicion(); cargarProductos(); } catch (e) { alert("Error: " + e.message); }
+        }
+        function editarProducto(id) { const p = productosCache.find(x => x.id === id); if (!p) return; editandoId = id; document.getElementById('edit-id').value = id; document.getElementById('nombre').value = p.nombre; document.getElementById('costo').value = p.costo; document.getElementById('venta').value = p.venta; document.getElementById('existencia').value = p.existencia; document.getElementById('categoria').value = p.categoria; document.getElementById('img').value = p.img; document.getElementById('img-preview').src = p.img; document.getElementById('img-preview').classList.remove('hidden'); document.getElementById('form-title').innerText = "Editando: " + p.nombre; document.getElementById('btn-cancelar').classList.remove('hidden'); window.scrollTo(0, 0); }
+        async function eliminarProducto(id) { if (!confirm("¿Eliminar?")) return; const { error } = await sb.from('productos').delete().eq('id', id); if (error) return; cargarProductos(); }
+        function cancelarEdicion() { editandoId = null; document.getElementById('edit-id').value = ''; document.getElementById('nombre').value = ''; document.getElementById('costo').value = ''; document.getElementById('venta').value = ''; document.getElementById('existencia').value = '0'; document.getElementById('categoria').value = ''; document.getElementById('img').value = ''; document.getElementById('img-file').value = ''; document.getElementById('img-preview').src = ''; document.getElementById('img-preview').classList.add('hidden'); document.getElementById('form-title').innerText = "Agregar Nuevo Producto"; document.getElementById('btn-cancelar').classList.add('hidden'); }
 
         // --- FINANZAS ---
         async function cargarVentas() {
-            const { data, error } = await sb.from('ventas').select('*').order('fecha', { ascending: false });
-            if (error) return console.error("Error cargando ventas:", error);
-            let totalIngresos = 0, totalCostos = 0, totalGanancia = 0;
-            const tbody = document.getElementById('tabla-ventas-body');
-            let htmlVentas = '';
-            data.forEach(v => {
-                totalIngresos += v.total_venta;
-                totalCostos += (v.costo * v.cantidad);
-                totalGanancia += v.ganancia;
-                const fecha = new Date(v.fecha).toLocaleString('es-CU');
-                const colorMoneda = v.moneda === 'USD' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300';
-                htmlVentas += `
-                    <tr class="border-b border-gray-700 hover:bg-gray-700">
-                        <td class="p-3 text-xs text-gray-400">${fecha}</td>
-                        <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorMoneda}">${v.moneda || 'CUP'}</span></td>
-                        <td class="p-3 font-bold">${v.producto}</td>
-                        <td class="p-3">${v.cantidad}</td>
-                        <td class="p-3 text-green-400">${v.total_venta} CUP</td>
-                        <td class="p-3 text-yellow-400 font-bold">${v.ganancia} CUP</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = htmlVentas;
-            document.getElementById('total-ingresos').innerText = totalIngresos.toLocaleString('es-CU') + ' CUP';
-            document.getElementById('total-costos').innerText = totalCostos.toLocaleString('es-CU') + ' CUP';
-            document.getElementById('total-ganancia-real').innerText = totalGanancia.toLocaleString('es-CU') + ' CUP';
+            const { data, error } = await sb.from('ventas').select('*').order('fecha', { ascending: false }); if (error) return; let tI = 0, tC = 0, tG = 0; const t = document.getElementById('tabla-ventas-body'); let h = '';
+            data.forEach(v => { tI += v.total_venta; tC += (v.costo * v.cantidad); tG += v.ganancia; const f = new Date(v.fecha).toLocaleString('es-CU'); const cM = v.moneda === 'USD' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'; h += `<tr class="border-b border-gray-700"><td class="p-3 text-xs text-gray-400">${f}</td><td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${cM}">${v.moneda || 'CUP'}</span></td><td class="p-3 font-bold">${v.producto}</td><td class="p-3">${v.cantidad}</td><td class="p-3 text-green-400">${v.total_venta} CUP</td><td class="p-3 text-yellow-400 font-bold">${v.ganancia} CUP</td></tr>`; });
+            t.innerHTML = h; document.getElementById('total-ingresos').innerText = tI.toLocaleString('es-CU') + ' CUP'; document.getElementById('total-costos').innerText = tC.toLocaleString('es-CU') + ' CUP'; document.getElementById('total-ganancia-real').innerText = tG.toLocaleString('es-CU') + ' CUP';
         }
 
         // --- MANTENIMIENTO ---
-        async function verificarMantenimiento() {
-            const { data } = await sb.from('ajustes').select('mantenimiento').eq('id', 1).single();
-            mantenimientoActivo = data ? data.mantenimiento : false;
-            actualizarBotonMantenimiento();
-        }
-
-        function actualizarBotonMantenimiento() {
-            const btn = document.getElementById('btn-mantenimiento');
-            const texto = document.getElementById('texto-estado-tienda');
-            if (mantenimientoActivo) {
-                btn.innerText = "🟢 Abrir Tienda";
-                btn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
-                btn.classList.add('bg-green-600', 'hover:bg-green-700');
-                texto.innerText = "Tienda Cerrada (En Mantenimiento)";
-                texto.classList.add('text-red-400');
-            } else {
-                btn.innerText = "🛠️ Activar Mantenimiento";
-                btn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
-                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                texto.innerText = "Tienda Abierta al público";
-                texto.classList.remove('text-red-400');
-            }
-        }
-
-        async function toggleMantenimiento() {
-            const nuevoEstado = !mantenimientoActivo;
-            const { error } = await sb.from('ajustes').update({ mantenimiento: nuevoEstado }).eq('id', 1);
-            if (error) return alert("Error al cambiar el estado.");
-            mantenimientoActivo = nuevoEstado;
-            actualizarBotonMantenimiento();
-            alert(nuevoEstado ? "🛠️ Tienda cerrada por mantenimiento." : "🟢 ¡Tienda abierta para ventas!");
-        }
+        async function verificarMantenimiento() { const { data } = await sb.from('ajustes').select('mantenimiento').eq('id', 1).single(); mantenimientoActivo = data ? data.mantenimiento : false; actualizarBotonMantenimiento(); }
+        function actualizarBotonMantenimiento() { const b = document.getElementById('btn-mantenimiento'), t = document.getElementById('texto-estado-tienda'); if (mantenimientoActivo) { b.innerText = "🟢 Abrir Tienda"; b.classList.remove('bg-yellow-600', 'hover:bg-yellow-700'); b.classList.add('bg-green-600', 'hover:bg-green-700'); t.innerText = "Cerrada (Mantenimiento)"; t.classList.add('text-red-400'); } else { b.innerText = "🛠️ Activar Mantenimiento"; b.classList.add('bg-yellow-600', 'hover:bg-yellow-700'); b.classList.remove('bg-green-600', 'hover:bg-green-700'); t.innerText = "Abierta al público"; t.classList.remove('text-red-400'); } }
+        async function toggleMantenimiento() { const n = !mantenimientoActivo; const { error } = await sb.from('ajustes').update({ mantenimiento: n }).eq('id', 1); if (error) return; mantenimientoActivo = n; actualizarBotonMantenimiento(); alert(n ? "🛠️ Cerrada." : "🟢 Abierta."); }
     </script>
 </body>
 </html>
