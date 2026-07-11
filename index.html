@@ -6,6 +6,7 @@
     <title>Admin - La Mia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen p-6">
 
@@ -312,21 +313,31 @@
                     for (const p of datos) {
                         let imgURL = p.img || "";
                         if (!idsExistentes.has(p.id)) {
-                            if (p.imagenBase64) {
-                                try {
-                                    const fileName = `prod_${p.id}_${Date.now()}.jpg`;
-                                    const imgFile = base64ToFile(p.imagenBase64, fileName);
-                                    const { error: upError } = await sb.storage.from('imagenes').upload(fileName, imgFile);
-                                    if (!upError) {
-                                        const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
-                                        imgURL = data.publicUrl;
-                                    }
-                                } catch (imgErr) {
-                                    console.error("Error convirtiendo imagen:", imgErr);
+                        if (p.imagenBase64) {
+                            try {
+                                // 1. Convertir Base64 a File
+                                const fileNameTemp = `prod_${p.id}_${Date.now()}.jpg`;
+                                let imgFile = base64ToFile(p.imagenBase64, fileNameTemp);
+                                
+                                // 2. Comprimir la imagen antes de subirla
+                                const options = {
+                                    maxSizeMB: 0.2,
+                                    maxWidthOrHeight: 800,
+                                    useWebWorker: true
+                                };
+                                const compressedFile = await imageCompression(imgFile, options);
+
+                                // 3. Subir comprimida
+                                const { error: upError } = await sb.storage.from('imagenes').upload(compressedFile.name, compressedFile);
+                                if (!upError) {
+                                    const { data } = sb.storage.from('imagenes').getPublicUrl(compressedFile.name);
+                                    imgURL = data.publicUrl;
                                 }
-                            } else if (p.imagenPath) {
-                                imgURL = p.imagenPath;
+                            } catch (imgErr) {
+                                console.error("Error convirtiendo imagen:", imgErr);
                             }
+                        } else if (p.imagenPath) {
+                            imgURL = p.imagenPath;
                         }
                         const productoData = {
                             id: p.id, nombre: p.nombreProducto || p.nombre, costo: p.precioCosto || p.costo || 0,
@@ -379,15 +390,38 @@
             }
         }
 
+        // --- SUBIR Y COMPRIMIR IMAGEN ---
         async function subirImagenSupabase() {
             const fileInput = document.getElementById('img-file');
             if (fileInput.files.length === 0) return null;
             const file = fileInput.files[0];
-            const fileName = `combo_${Date.now()}.jpg`;
-            const { error } = await sb.storage.from('imagenes').upload(fileName, file);
-            if (error) throw error;
-            const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
-            return data.publicUrl;
+
+            // Mostramos un mensaje de que está comprimiendo
+            const preview = document.getElementById('img-preview');
+            preview.classList.remove('hidden');
+            preview.src = URL.createObjectURL(file);
+            
+            try {
+                // 1. Comprimir la imagen (máximo 800px de ancho y 200KB de peso)
+                const options = {
+                    maxSizeMB: 0.2,
+                    maxWidthOrHeight: 800,
+                    useWebWorker: true
+                };
+                const compressedFile = await imageCompression(file, options);
+
+                // 2. Subir la imagen comprimida a Supabase
+                const fileName = `combo_${Date.now()}.jpg`;
+                const { error } = await sb.storage.from('imagenes').upload(fileName, compressedFile, { contentType: 'image/jpeg' });
+                if (error) throw error;
+                
+                const { data } = sb.storage.from('imagenes').getPublicUrl(fileName);
+                return data.publicUrl;
+            } catch (error) {
+                console.error("Error al comprimir/subir:", error);
+                alert("Hubo un error al procesar la imagen.");
+                return null;
+            }
         }
 
         // --- CARGAR Y RENDERIZAR PRODUCTOS ---
