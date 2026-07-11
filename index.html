@@ -62,10 +62,9 @@
                         <option value="telegram">Telegram</option>
                     </select>
                     <input type="text" id="input-telegram-user" class="w-full p-2 rounded text-black text-sm mt-2 hidden" placeholder="Usuario Telegram (sin @)">
-                    <button onclick="guardarTelegram()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm mt-2 hidden w-full">💾 Guardar Telegram</button>
+                    <button id="btn-guardar-telegram" onclick="guardarTelegram()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm mt-2 hidden w-full">💾 Guardar Telegram</button>
                 </div>
             </div>
-        </div>
 
         <!-- IMPORTAR JSON -->
         <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-blue-500">
@@ -260,12 +259,12 @@
             alert("✅ Tasa actualizada. La tienda pública la usará en su próxima visita.");
         }
 
-                // --- CANAL DE PEDIDOS (TELEGRAM / WHATSAPP) ---
+        // --- CANAL DE PEDIDOS (TELEGRAM / WHATSAPP) ---
         async function cargarCanalActual() {
             const { data } = await sb.from('ajustes').select('canal_pedido, telegram_user').eq('id', 1).single();
             if (data) {
                 document.getElementById('select-canal').value = data.canal_pedido || 'whatsapp';
-                cambiarCanal(); // Actualizar la vista
+                cambiarCanal(); 
                 if (data.telegram_user) {
                     document.getElementById('input-telegram-user').value = data.telegram_user;
                 }
@@ -275,22 +274,37 @@
         function cambiarCanal() {
             const canal = document.getElementById('select-canal').value;
             const telegramDiv = document.getElementById('input-telegram-user');
-            const btnGuardar = document.querySelector('#input-telegram-user').nextElementSibling;
+            const btnGuardar = document.getElementById('btn-guardar-telegram');
+            
             if (canal === 'telegram') {
                 telegramDiv.classList.remove('hidden');
                 btnGuardar.classList.remove('hidden');
             } else {
+                // Si eligen WhatsApp, ocultamos los campos de Telegram...
                 telegramDiv.classList.add('hidden');
                 btnGuardar.classList.add('hidden');
+                // ¡Y guardamos automáticamente en la base de datos!
+                guardarCanalWhatsApp();
+            }
+        }
+
+        async function guardarCanalWhatsApp() {
+            const { error } = await sb.from('ajustes').update({ canal_pedido: 'whatsapp' }).eq('id', 1);
+            if (error) {
+                alert("Error al guardar el canal.");
+            } else {
+                alert("✅ Canal cambiado a WhatsApp. La tienda pública usaría WhatsApp ahora.");
             }
         }
 
         async function guardarTelegram() {
             const usuario = document.getElementById('input-telegram-user').value.replace('@', '').trim();
-            const canal = document.getElementById('select-canal').value;
-            const { error } = await sb.from('ajustes').update({ canal_pedido: canal, telegram_user: usuario }).eq('id', 1);
+            if (!usuario) return alert("Por favor escribe tu usuario de Telegram.");
+            
+            const { error } = await sb.from('ajustes').update({ canal_pedido: 'telegram', telegram_user: usuario }).eq('id', 1);
             if (error) return alert("Error al guardar el canal.");
-            alert("✅ Canal de pedidos actualizado.");
+            
+            alert("✅ Canal de pedidos actualizado a Telegram.");
         }
 
         // --- EXPORTAR A EXCEL (CSV) ---
