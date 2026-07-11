@@ -208,7 +208,9 @@
                 if (!response.ok) throw new Error("Error en la respuesta de elToque");
                 
                 const data = await response.json();
-                const tasa = data.usd || data.tasa || data.tcg?.usd || data.rate;
+                
+                // Buscamos la tasa en minúsculas o mayúsculas por si la API cambia
+                const tasa = data.usd || data.USD || data.tasa || data.tcg?.usd || data.rate;
                 
                 if (tasa && !isNaN(tasa)) {
                     tasaEl.innerText = Math.round(tasa);
