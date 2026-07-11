@@ -53,7 +53,7 @@
                 </div>
             </div>
 
-            <!-- NUEVO PANEL DE CANAL DE PEDIDOS -->
+            <!-- CANAL DE PEDIDOS -->
             <div class="p-4 bg-gray-800 rounded-xl flex justify-between items-center gap-4">
                 <div class="w-full">
                     <h3 class="text-lg font-bold text-white">Canal de Pedidos</h3>
@@ -65,6 +65,7 @@
                     <button id="btn-guardar-telegram" onclick="guardarTelegram()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm mt-2 hidden w-full">💾 Guardar Telegram</button>
                 </div>
             </div>
+        </div>
 
         <!-- IMPORTAR JSON -->
         <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-blue-500">
@@ -256,7 +257,7 @@
             if (isNaN(nuevaTasa) || nuevaTasa <= 0) return alert("Introduce un valor válido.");
             const { error } = await sb.from('ajustes').update({ tasa_usd: nuevaTasa }).eq('id', 1);
             if (error) return alert("Error al guardar la tasa.");
-            alert("✅ Tasa actualizada. La tienda pública la usará en su próxima visita.");
+            alert("✅ Tasa actualizada.");
         }
 
         // --- CANAL DE PEDIDOS (TELEGRAM / WHATSAPP) ---
@@ -280,10 +281,8 @@
                 telegramDiv.classList.remove('hidden');
                 btnGuardar.classList.remove('hidden');
             } else {
-                // Si eligen WhatsApp, ocultamos los campos de Telegram...
                 telegramDiv.classList.add('hidden');
                 btnGuardar.classList.add('hidden');
-                // ¡Y guardamos automáticamente en la base de datos!
                 guardarCanalWhatsApp();
             }
         }
@@ -293,17 +292,15 @@
             if (error) {
                 alert("Error al guardar el canal.");
             } else {
-                alert("✅ Canal cambiado a WhatsApp. La tienda pública usaría WhatsApp ahora.");
+                alert("✅ Canal cambiado a WhatsApp.");
             }
         }
 
         async function guardarTelegram() {
             const usuario = document.getElementById('input-telegram-user').value.replace('@', '').trim();
             if (!usuario) return alert("Por favor escribe tu usuario de Telegram.");
-            
             const { error } = await sb.from('ajustes').update({ canal_pedido: 'telegram', telegram_user: usuario }).eq('id', 1);
             if (error) return alert("Error al guardar el canal.");
-            
             alert("✅ Canal de pedidos actualizado a Telegram.");
         }
 
@@ -358,7 +355,7 @@
                 try {
                     const json = JSON.parse(e.target.result);
                     const datos = json.datos || json;
-                    statusEl.innerText = "Verificando productos existentes en la base de datos...";
+                    statusEl.innerText = "Verificando productos existentes...";
                     let idsExistentes = new Set();
                     let from = 0;
                     while(true) {
@@ -406,7 +403,7 @@
                         }
                         statusEl.innerText = `Preparando productos... (${nuevosProductos.length + productosParaActualizar.length}/${datos.length})`;
                     }
-                    statusEl.innerText = `Subiendo a Supabase (${nuevosProductos.length} nuevos, ${productosParaActualizar.length} actualizaciones)...`;
+                    statusEl.innerText = `Subiendo a Supabase...`;
                     const chunkSize = 5;
                     let errores = 0;
                     for (let i = 0; i < nuevosProductos.length; i += chunkSize) {
@@ -456,11 +453,7 @@
             preview.src = URL.createObjectURL(file);
             
             try {
-                const options = {
-                    maxSizeMB: 0.2,
-                    maxWidthOrHeight: 800,
-                    useWebWorker: true
-                };
+                const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
                 const compressedFile = await imageCompression(file, options);
 
                 const fileName = `combo_${Date.now()}.jpg`;
