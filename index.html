@@ -198,17 +198,13 @@
         async function obtenerTasaElToque() {
             const tasaEl = document.getElementById('tasa-usd-valor');
             try {
-                const response = await fetch('https://api.eltoque.com/v1/tcg/today', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4MzYyNDEwNCwianRpIjoiYjdiYTcyOTUtNWVhNC00YWMxLTkzNDItOGZlNDdmZGMwMGQyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjZhNGFhNjRlNmNhMjY5OGE5NjRkNTlmZSIsIm5iZiI6MTc4MzYyNDEwNH0.l04tqLs51_0Xjj7mnGFmli1PxcpHOn-Q-qZppmALcV8'
-                    }
-                });
+                // Usamos el puente de Google
+                const response = await fetch('https://script.google.com/macros/s/AKfycbytGdTM_q4FvUMj-1R7rZ4CqVI9_idImm6CJRqBTT04NQpN7mdy_GT_HQdcAT-U24pi/exec');
                 
-                if (!response.ok) throw new Error("API no disponible");
+                if (!response.ok) throw new Error("Error en el puente");
                 
-                const data = await response.json();
-                const tasa = data.usd || data.USD || data.tasa || data.tcg?.usd || data.rate;
+                const tasaText = await response.text();
+                const tasa = parseFloat(tasaText);
                 
                 if (tasa && !isNaN(tasa)) {
                     tasaEl.innerText = Math.round(tasa);
@@ -216,7 +212,7 @@
                     tasaEl.innerText = "660 (Respaldo)";
                 }
             } catch (error) {
-                console.log("elToque bloqueó el acceso directo (CORS). Usando tasa de respaldo.");
+                console.log("Error. Usando respaldo.");
                 tasaEl.innerText = "660 (Respaldo)";
             }
         }
