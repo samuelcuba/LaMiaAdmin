@@ -30,8 +30,8 @@
             <button onclick="cerrarSesion()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm">🚪 Cerrar Sesión</button>
         </div>
 
-        <!-- Configuración Rápida (Mantenimiento y Tasa USD) -->
-        <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Configuración Rápida (Mantenimiento, Tasa USD y Canal) -->
+        <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="p-4 bg-gray-800 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-white">Estado de la Tienda</h3>
@@ -49,7 +49,20 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <input type="number" id="input-tasa-usd" class="p-2 rounded text-black text-center w-24 font-bold" value="660">
-                    <button onclick="guardarTasa()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-bold text-sm">💾 Guardar</button>
+                    <button onclick="guardarTasa()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-bold text-sm">💾</button>
+                </div>
+            </div>
+
+            <!-- NUEVO PANEL DE CANAL DE PEDIDOS -->
+            <div class="p-4 bg-gray-800 rounded-xl flex justify-between items-center gap-4">
+                <div class="w-full">
+                    <h3 class="text-lg font-bold text-white">Canal de Pedidos</h3>
+                    <select id="select-canal" class="w-full p-2 rounded text-black text-sm mt-2" onchange="cambiarCanal()">
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="telegram">Telegram</option>
+                    </select>
+                    <input type="text" id="input-telegram-user" class="w-full p-2 rounded text-black text-sm mt-2 hidden" placeholder="Usuario Telegram (sin @)">
+                    <button onclick="guardarTelegram()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm mt-2 hidden w-full">💾 Guardar Telegram</button>
                 </div>
             </div>
         </div>
@@ -228,6 +241,7 @@
             cargarVentas();
             verificarMantenimiento();
             cargarTasaActual();
+            cargarCanalActual();
         }
 
         // --- TASA DE CAMBIO USD ---
@@ -244,6 +258,39 @@
             const { error } = await sb.from('ajustes').update({ tasa_usd: nuevaTasa }).eq('id', 1);
             if (error) return alert("Error al guardar la tasa.");
             alert("✅ Tasa actualizada. La tienda pública la usará en su próxima visita.");
+        }
+
+                // --- CANAL DE PEDIDOS (TELEGRAM / WHATSAPP) ---
+        async function cargarCanalActual() {
+            const { data } = await sb.from('ajustes').select('canal_pedido, telegram_user').eq('id', 1).single();
+            if (data) {
+                document.getElementById('select-canal').value = data.canal_pedido || 'whatsapp';
+                cambiarCanal(); // Actualizar la vista
+                if (data.telegram_user) {
+                    document.getElementById('input-telegram-user').value = data.telegram_user;
+                }
+            }
+        }
+
+        function cambiarCanal() {
+            const canal = document.getElementById('select-canal').value;
+            const telegramDiv = document.getElementById('input-telegram-user');
+            const btnGuardar = document.querySelector('#input-telegram-user').nextElementSibling;
+            if (canal === 'telegram') {
+                telegramDiv.classList.remove('hidden');
+                btnGuardar.classList.remove('hidden');
+            } else {
+                telegramDiv.classList.add('hidden');
+                btnGuardar.classList.add('hidden');
+            }
+        }
+
+        async function guardarTelegram() {
+            const usuario = document.getElementById('input-telegram-user').value.replace('@', '').trim();
+            const canal = document.getElementById('select-canal').value;
+            const { error } = await sb.from('ajustes').update({ canal_pedido: canal, telegram_user: usuario }).eq('id', 1);
+            if (error) return alert("Error al guardar el canal.");
+            alert("✅ Canal de pedidos actualizado.");
         }
 
         // --- EXPORTAR A EXCEL (CSV) ---
