@@ -160,7 +160,10 @@
         </div>
 
         <!-- HISTORIAL DE VENTAS -->
-        <h2 class="text-3xl font-bold text-green-500 mt-12 mb-6">Historial de Ventas 📝</h2>
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h2 class="text-3xl font-bold text-green-500 mt-12">Historial de Ventas 📝</h2>
+            <button onclick="exportarVentasExcel()" class="bg-green-700 hover:bg-green-800 px-4 py-2 rounded font-bold text-sm whitespace-nowrap flex items-center gap-2 mt-12">📊 Exportar Ventas (Excel)</button>
+        </div>
         <div class="overflow-x-auto bg-gray-800 rounded-xl">
             <table class="w-full text-left">
                 <thead><tr class="border-b border-gray-700 text-gray-400">
@@ -176,7 +179,8 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YW9kb3BydmZ6enN6b2h5cmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTkwMDIsImV4cCI6MjA5ODc3NTAwMn0.2kZkJzLhNh-ANkf4QHFFjMauXONEBZqjOFhSshg_eiA';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let editandoId = null, mantenimientoActivo = false, productosCache = [], timeoutBusquedaAdmin = null; 
+        let editandoId = null, mantenimientoActivo = false, productosCache = [], timeoutBusquedaAdmin = null;
+        let ventasCache = [];
 
         window.onload = async function() {
             const { data: { session } } = await sb.auth.getSession();
@@ -186,7 +190,7 @@
         async function login() {
             const email = document.getElementById('email').value, pass = document.getElementById('password').value, errorMsg = document.getElementById('error-msg');
             const { data, error } = await sb.auth.signInWithPassword({ email: email, password: pass });
-            if (error) { errorMsg.classList.remove('hidden'); errorMsg.innerText = "Correo o contraseña incorrectos."; } 
+            if (error) { errorMsg.classList.remove('hidden'); errorMsg.innerText = "Correo o contraseña incorrectos."; }
             else iniciarPanel();
         }
 
@@ -236,6 +240,18 @@
 
         // --- EXPORTAR EXCEL ---
         function exportarExcel() { if (productosCache.length === 0) return; let c = "\uFEFFID,Nombre,Categoría,Costo,Venta,Stock Actual,Conteo Físico,Diferencia\n"; productosCache.forEach(p => { c += `${p.id},"${p.nombre.replace(/"/g, '""')}","${p.categoria.replace(/"/g, '""')}",${p.costo || 0},${p.venta || 0},${p.existencia || 0},,\n`; }); const b = new Blob([c], { type: 'text/csv;charset=utf-8;' }); const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = "inventario_la_mia.csv"; l.click(); }
+
+        // --- EXPORTAR VENTAS A EXCEL ---
+        function exportarVentasExcel() {
+            if (ventasCache.length === 0) return alert("No hay ventas para exportar.");
+            let c = "\uFEFFFecha,Moneda,Producto,Cantidad,Precio Venta,Costo,Total Venta,Ganancia\n";
+            ventasCache.forEach(v => {
+                const f = new Date(v.fecha).toLocaleString('es-CU');
+                c += `"${f}",${v.moneda || 'CUP'},"${(v.producto || '').replace(/"/g, '""')}",${v.cantidad || 0},${v.precio_venta || 0},${v.costo || 0},${v.total_venta || 0},${v.ganancia || 0}\n`;
+            });
+            const b = new Blob([c], { type: 'text/csv;charset=utf-8;' });
+            const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = "ventas_la_mia.csv"; l.click();
+        }
 
         // --- IMÁGENES Y JSON ---
         function base64ToFile(b, f) { let c = b.replace(/\n/g, '').trim(); let m = 'image/jpeg'; let s; if (c.startsWith('data:')) { const a = c.split(','); m = a[0].match(/:(.*?);/)[1]; s = atob(a[1]); } else s = atob(c); let n = s.length; const u = new Uint8Array(n); while(n--) u[n] = s.charCodeAt(n); return new File([u], f, {type:m}); }
@@ -287,7 +303,7 @@
 
         // --- FINANZAS ---
         async function cargarVentas() {
-            const { data, error } = await sb.from('ventas').select('*').order('fecha', { ascending: false }); if (error) return; let tI = 0, tC = 0, tG = 0; const t = document.getElementById('tabla-ventas-body'); let h = '';
+            const { data, error } = await sb.from('ventas').select('*').order('fecha', { ascending: false }); if (error) return; ventasCache = data || []; let tI = 0, tC = 0, tG = 0; const t = document.getElementById('tabla-ventas-body'); let h = '';
             data.forEach(v => { tI += v.total_venta; tC += (v.costo * v.cantidad); tG += v.ganancia; const f = new Date(v.fecha).toLocaleString('es-CU'); const cM = v.moneda === 'USD' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'; h += `<tr class="border-b border-gray-700"><td class="p-3 text-xs text-gray-400">${f}</td><td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${cM}">${v.moneda || 'CUP'}</span></td><td class="p-3 font-bold">${v.producto}</td><td class="p-3">${v.cantidad}</td><td class="p-3 text-green-400">${v.total_venta} CUP</td><td class="p-3 text-yellow-400 font-bold">${v.ganancia} CUP</td></tr>`; });
             t.innerHTML = h; document.getElementById('total-ingresos').innerText = tI.toLocaleString('es-CU') + ' CUP'; document.getElementById('total-costos').innerText = tC.toLocaleString('es-CU') + ' CUP'; document.getElementById('total-ganancia-real').innerText = tG.toLocaleString('es-CU') + ' CUP';
         }
