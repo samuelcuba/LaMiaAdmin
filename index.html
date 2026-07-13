@@ -333,15 +333,21 @@
             if (!titulo || !mensaje) { status.innerText = "Completa título y mensaje."; status.className = "text-sm text-red-400 mt-2"; return; }
             status.innerText = "Enviando..."; status.className = "text-sm text-gray-400 mt-2";
             try {
-                const { data, error } = await sb.functions.invoke('push-notification', { body: { titulo, mensaje } });
-                if (error) throw error;
-                const enviados = data && data.enviados !== undefined ? data.enviados : '?';
-                const fallidos = data && data.fallidos !== undefined ? data.fallidos : 0;
+                const functionUrl = SUPABASE_URL.replace('/co', '/co') + '/functions/v1/push-notification';
+                const res = await fetch(functionUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+                    body: JSON.stringify({ titulo, mensaje })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error ' + res.status);
+                const enviados = data.enviados !== undefined ? data.enviados : '?';
+                const fallidos = data.fallidos !== undefined ? data.fallidos : 0;
                 status.innerText = `✅ ${enviados} notificaciones enviadas${fallidos > 0 ? `, ${fallidos} fallidas` : ''}.`;
                 status.className = "text-sm text-green-400 mt-2";
                 document.getElementById('push-titulo').value = ''; document.getElementById('push-mensaje').value = '';
             } catch (e) {
-                status.innerText = "❌ Error: " + (e.message || "no se pudo enviar. Verifica la Edge Function y los secrets VAPID.");
+                status.innerText = "❌ Error: " + (e.message || "no se pudo enviar.");
                 status.className = "text-sm text-red-400 mt-2";
             }
         }
