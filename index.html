@@ -159,6 +159,18 @@
             </div>
         </div>
 
+        <!-- ENVIAR NOTIFICACIÓN PUSH -->
+        <div class="mb-12 p-6 bg-gray-800 rounded-xl border border-purple-500">
+            <h2 class="text-2xl font-bold mb-4 text-purple-400">Enviar Notificación 🔔</h2>
+            <p class="text-gray-400 text-sm mb-4">Envía un aviso push a todos los clientes suscritos. Llegará aunque la app esté cerrada.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <input type="text" id="push-titulo" placeholder="Título (Ej: ¡Oferta especial!)" class="md:col-span-1 p-2 rounded text-black">
+                <input type="text" id="push-mensaje" placeholder="Mensaje (Ej: 20% en bebidas hoy)" class="md:col-span-2 p-2 rounded text-black">
+            </div>
+            <button onclick="enviarPush()" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded font-bold">🔔 Enviar Notificación</button>
+            <p id="push-status" class="text-sm text-gray-400 mt-2"></p>
+        </div>
+
         <!-- HISTORIAL DE VENTAS -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <h2 class="text-3xl font-bold text-green-500 mt-12">Historial de Ventas 📝</h2>
@@ -312,6 +324,27 @@
         async function verificarMantenimiento() { const { data } = await sb.from('ajustes').select('mantenimiento').eq('id', 1).single(); mantenimientoActivo = data ? data.mantenimiento : false; actualizarBotonMantenimiento(); }
         function actualizarBotonMantenimiento() { const b = document.getElementById('btn-mantenimiento'), t = document.getElementById('texto-estado-tienda'); if (mantenimientoActivo) { b.innerText = "🟢 Abrir Tienda"; b.classList.remove('bg-yellow-600', 'hover:bg-yellow-700'); b.classList.add('bg-green-600', 'hover:bg-green-700'); t.innerText = "Cerrada (Mantenimiento)"; t.classList.add('text-red-400'); } else { b.innerText = "🛠️ Activar Mantenimiento"; b.classList.add('bg-yellow-600', 'hover:bg-yellow-700'); b.classList.remove('bg-green-600', 'hover:bg-green-700'); t.innerText = "Abierta al público"; t.classList.remove('text-red-400'); } }
         async function toggleMantenimiento() { const n = !mantenimientoActivo; const { error } = await sb.from('ajustes').update({ mantenimiento: n }).eq('id', 1); if (error) return; mantenimientoActivo = n; actualizarBotonMantenimiento(); alert(n ? "🛠️ Cerrada." : "🟢 Abierta."); }
+
+        // --- NOTIFICACIONES PUSH ---
+        async function enviarPush() {
+            const titulo = document.getElementById('push-titulo').value.trim();
+            const mensaje = document.getElementById('push-mensaje').value.trim();
+            const status = document.getElementById('push-status');
+            if (!titulo || !mensaje) { status.innerText = "Completa título y mensaje."; status.className = "text-sm text-red-400 mt-2"; return; }
+            status.innerText = "Enviando..."; status.className = "text-sm text-gray-400 mt-2";
+            try {
+                const { data, error } = await sb.functions.invoke('push-notification', { body: { titulo, mensaje } });
+                if (error) throw error;
+                const enviados = data && data.enviados !== undefined ? data.enviados : '?';
+                const fallidos = data && data.fallidos !== undefined ? data.fallidos : 0;
+                status.innerText = `✅ ${enviados} notificaciones enviadas${fallidos > 0 ? `, ${fallidos} fallidas` : ''}.`;
+                status.className = "text-sm text-green-400 mt-2";
+                document.getElementById('push-titulo').value = ''; document.getElementById('push-mensaje').value = '';
+            } catch (e) {
+                status.innerText = "❌ Error: " + (e.message || "no se pudo enviar. Verifica la Edge Function y los secrets VAPID.");
+                status.className = "text-sm text-red-400 mt-2";
+            }
+        }
     </script>
 </body>
 </html>
