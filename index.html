@@ -33,7 +33,7 @@
     </div>
 
     <!-- Panel Real -->
-        <div class="flex justify-between items-center mb-8 p-4 admin-header rounded-xl shadow-lg">
+        <div id="admin-panel" class="flex justify-between items-center mb-8 p-4 admin-header rounded-xl shadow-lg">
             <h1 class="text-2xl md:text-3xl font-extrabold text-white">🛠️ Panel de La Mia</h1>
             <button onclick="cerrarSesion()" class="bg-black/30 hover:bg-black/50 text-white px-4 py-2 rounded-lg font-bold text-sm transition">🚪 Cerrar Sesión</button>
         </div>
@@ -218,11 +218,22 @@
 
         async function cerrarSesion() { await sb.auth.signOut(); location.reload(); }
 
-        function iniciarPanel() {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('admin-panel').classList.remove('hidden');
-            cargarProductos(); cargarVentas(); verificarMantenimiento(); cargarTasaActual(); cargarCanalActual(); cargarCupones();
-        }
+function iniciarPanel() {
+    const loginScreen = document.getElementById('login-screen');
+    const adminPanel = document.getElementById('admin-panel');
+
+    // Verificamos que existan antes de tocarles el classList
+    if (loginScreen) loginScreen.classList.add('hidden');
+    if (adminPanel) adminPanel.classList.remove('hidden');
+
+    // Cargamos los datos igualmente
+    cargarProductos(); 
+    cargarVentas(); 
+    verificarMantenimiento(); 
+    cargarTasaActual(); 
+    cargarCanalActual(); 
+    cargarCupones();
+}
 
         // --- TASA USD ---
         async function cargarTasaActual() { const { data } = await sb.from('ajustes').select('tasa_usd').eq('id', 1).single(); if (data && data.tasa_usd) document.getElementById('input-tasa-usd').value = data.tasa_usd; }
