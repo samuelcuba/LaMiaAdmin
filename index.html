@@ -81,6 +81,43 @@
         <button onclick="subirExcelProveedor()" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded font-bold">Importar Catálogo</button>
         <p id="proveedor-status" class="text-sm text-gray-400 mt-2"></p>
     </div>
+        <!-- Gestión Manual del Catálogo Proveedor -->
+    <div class="p-6 bg-gray-800 rounded-xl mb-8 border border-purple-500/50">
+        <h3 id="form-prov-title" class="text-xl font-bold mb-4">Agregar Producto al Catálogo Proveedor</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <input type="hidden" id="edit-prov-id">
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Nombre y Medidas</label>
+                <input type="text" id="prov-nombre" class="w-full p-2 rounded text-black" placeholder="Ej: Neumático (165/70R12)">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Categoría</label>
+                <input type="text" id="prov-categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Neumáticos">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Precio Estimado (USD)</label>
+                <input type="number" id="prov-precio" class="w-full p-2 rounded text-black" placeholder="Ej: 33">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Detalles (Marca, Serie, etc.)</label>
+                <input type="text" id="prov-descripcion" class="w-full p-2 rounded text-black" placeholder="Ej: Marca: Michelin | Serie: X">
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="guardarProvManual()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-bold">💾 Guardar</button>
+            <button onclick="cancelarEdicionProv()" id="btn-cancelar-prov" class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded font-bold hidden">✖ Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Tabla del Catálogo Proveedor -->
+    <div class="overflow-x-auto bg-gray-800 rounded-xl mb-8 shadow-lg">
+        <table class="w-full min-w-[800px] text-left border-collapse">
+            <thead><tr class="border-b border-gray-700 text-gray-400 bg-gray-900/50">
+                <th class="p-3">Nombre</th><th class="p-3">Detalles</th><th class="p-3">Precio</th><th class="p-3">Acciones</th>
+            </tr></thead>
+            <tbody id="tabla-prov-body"></tbody>
+        </table>
+    </div>
 
     <!-- Gestión de Reservas -->
     <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
@@ -278,6 +315,7 @@ function iniciarPanel() {
     cargarCanalActual(); 
     cargarCupones();
     cargarReservas();
+    cargarCatalogoProveedor();
 }
 
         // --- TASA USD ---
@@ -537,6 +575,88 @@ async function subirExcelProveedor() {
     reader.readAsArrayBuffer(file);
 }
 
+// --- GESTIÓN MANUAL CATÁLOGO PROVEEDOR ---
+let editandoIdProv = null;
+
+async function cargarCatalogoProveedor() {
+    const { data, error } = await sb.from('catalogo_proveedor').select('*').order('id', { ascending: true });
+    const t = document.getElementById('tabla-prov-body');
+    if (error || !data) return t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Error al cargar.</td></tr>`;
+    if (data.length === 0) return t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Catálogo vacío. Sube un Excel o agrega uno manualmente.</td></tr>`;
+    
+    let h = '';
+    data.forEach(p => {
+        h += `<tr class="border-b border-gray-700 align-top">
+            <td class="p-3 font-bold text-white text-sm">${p.nombre}</td>
+            <td class="p-3 text-xs text-gray-400 max-w-xs">${p.descripcion || 'N/A'}</td>
+            <td class="p-3 text-sm text-green-400 font-bold whitespace-nowrap">$${p.precio_estimado} USD</td>
+            <td class="p-3 flex gap-2">
+                <button onclick="editarProv(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button>
+                <button onclick="eliminarProv(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button>
+            </td>
+        </tr>`;
+    });
+    t.innerHTML = h;
+}
+
+async function guardarProvManual() {
+    const id = document.getElementById('edit-prov-id').value;
+    const n = document.getElementById('prov-nombre').value.trim();
+    const c = document.getElementById('prov-categoria').value.trim() || 'General';
+    const p = parseFloat(document.getElementById('prov-precio').value) || 0;
+    const d = document.getElementById('prov-descripcion').value.trim();
+    
+    if (!n) return alert("El nombre es obligatorio.");
+    
+    try {
+        if (editandoIdProv !== null) {
+            const { error } = await sb.from('catalogo_proveedor').update({ nombre: n, categoria: c, precio_estimado: p, descripcion: d }).eq('id', editandoIdProv);
+            if (error) throw error;
+            alert("Producto del proveedor actualizado.");
+        } else {
+            const { error } = await sb.from('catalogo_proveedor').insert([{ nombre: n, categoria: c, precio_estimado: p, descripcion: d }]);
+            if (error) throw error;
+            alert("Producto agregado al catálogo del proveedor.");
+        }
+        cancelarEdicionProv();
+        cargarCatalogoProveedor();
+    } catch (e) { alert("Error: " + e.message); }
+}
+
+function editarProv(id) {
+    // Buscamos el producto en la base de datos y llenamos el formulario
+    sb.from('catalogo_proveedor').select('*').eq('id', id).single().then(({ data, error }) => {
+        if (error || !data) return;
+        editandoIdProv = id;
+        document.getElementById('edit-prov-id').value = id;
+        document.getElementById('prov-nombre').value = data.nombre;
+        document.getElementById('prov-categoria').value = data.categoria;
+        document.getElementById('prov-precio').value = data.precio_estimado;
+        document.getElementById('prov-descripcion').value = data.descripcion;
+        document.getElementById('form-prov-title').innerText = "Editando: " + data.nombre;
+        document.getElementById('btn-cancelar-prov').classList.remove('hidden');
+        window.scrollTo(0, 0);
+    });
+}
+
+function cancelarEdicionProv() {
+    editandoIdProv = null;
+    document.getElementById('edit-prov-id').value = '';
+    document.getElementById('prov-nombre').value = '';
+    document.getElementById('prov-categoria').value = '';
+    document.getElementById('prov-precio').value = '';
+    document.getElementById('prov-descripcion').value = '';
+    document.getElementById('form-prov-title').innerText = "Agregar Producto al Catálogo Proveedor";
+    document.getElementById('btn-cancelar-prov').classList.add('hidden');
+}
+
+async function eliminarProv(id) {
+    if (!confirm("¿Eliminar este producto del catálogo proveedor?")) return;
+    const { error } = await sb.from('catalogo_proveedor').delete().eq('id', id);
+    if (error) return alert("Error al eliminar.");
+    cargarCatalogoProveedor();
+}
+        
 async function cargarReservas() {
     const { data, error } = await sb.from('reservas').select('*').order('fecha_creacion', { ascending: false });
     const t = document.getElementById('tabla-reservas-body');
