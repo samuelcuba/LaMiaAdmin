@@ -439,31 +439,43 @@
         function cancelarEdicion() { editandoId = null; document.getElementById('edit-id').value = ''; document.getElementById('nombre').value = ''; document.getElementById('costo').value = ''; document.getElementById('venta').value = ''; document.getElementById('existencia').value = '0'; document.getElementById('categoria').value = ''; document.getElementById('subcategoria').value = ''; document.getElementById('img').value = ''; document.getElementById('img-file').value = ''; document.getElementById('img-preview').src = ''; document.getElementById('img-preview').classList.add('hidden'); document.getElementById('form-title').innerText = "Agregar Nuevo Producto"; document.getElementById('btn-cancelar').classList.add('hidden'); }
 
         // --- RESERVAS ---
-        async function cargarReservas() {
-            const { data, error } = await sb.from('reservas').select('*').order('fecha_creacion', { ascending: false });
-            const t = document.getElementById('tabla-reservas-body');
-            if (error || !data) return t.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Error al cargar.</td></tr>`;
-            if (data.length === 0) return t.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Aún no hay reservas.</td></tr>`;
-            let h = '';
-            data.forEach(r => {
-                const productos = JSON.parse(r.productos);
-                let listaProd = productos.map(p => `${p.cantidad}x ${p.nombre}`).join('<br>');
-                let colorEstado = 'bg-yellow-900 text-yellow-300';
-                if (r.estado === 'abonado') colorEstado = 'bg-blue-900 text-blue-300';
-                if (r.estado === 'entregado') colorEstado = 'bg-green-900 text-green-300';
-                if (r.estado === 'cancelado') colorEstado = 'bg-red-900 text-red-300';
-                h += `<tr class="border-b border-gray-700 align-top">
-                    <td class="p-3 font-bold text-white">${r.cliente_nombre}</td>
-                    <td class="p-3 text-sm whitespace-nowrap text-gray-300">${r.cliente_telefono}</td>
-                    <td class="p-3 text-xs text-gray-400">${listaProd}</td>
-                    <td class="p-3 text-sm whitespace-nowrap"><span class="text-white font-bold">$${r.total_estimado}</span><br><span class="text-green-400 text-xs">($${r.monto_abonado} abonado)</span></td>
-                    <td class="p-3 text-xs whitespace-nowrap text-gray-300">${r.fecha_recogida ? new Date(r.fecha_recogida).toLocaleDateString('es-CU') : 'Por definir'}</td>
-                    <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorEstado}">${r.estado}</span></td>
-                    <td class="p-3"><select onchange="cambiarEstadoReserva(${r.id}, this.value)" class="bg-gray-700 text-white p-1 rounded text-xs border border-gray-600 outline-none focus:ring-1 focus:ring-purple-500"><option value="pendiente" ${r.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option><option value="abonado" ${r.estado === 'abonado' ? 'selected' : ''}>Abonado 50%</option><option value="entregado" ${r.estado === 'entregado' ? 'selected' : ''}>Entregado</option><option value="cancelado" ${r.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option></select></td>
-                </tr>`;
-            });
-            t.innerHTML = h;
-        }
+async function cargarReservas() {
+    const { data, error } = await sb.from('reservas').select('*').order('fecha_creacion', { ascending: false });
+    const t = document.getElementById('tabla-reservas-body');
+    if (error || !data) return t.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Error al cargar.</td></tr>`;
+    if (data.length === 0) return t.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Aún no hay reservas.</td></tr>`;
+    
+    // Obtener la tasa de USD actual desde el input del panel
+    const tasaUsd = parseFloat(document.getElementById('input-tasa-usd').value) || 1;
+    
+    let h = '';
+    data.forEach(r => {
+        const productos = JSON.parse(r.productos);
+        let listaProd = productos.map(p => `${p.cantidad}x ${p.nombre}`).join('<br>');
+        let colorEstado = 'bg-yellow-900 text-yellow-300';
+        if (r.estado === 'abonado') colorEstado = 'bg-blue-900 text-blue-300';
+        if (r.estado === 'entregado') colorEstado = 'bg-green-900 text-green-300';
+        if (r.estado === 'cancelado') colorEstado = 'bg-red-900 text-red-300';
+        
+        // Calcular montos en CUP
+        const totalCUP = Math.round(r.total_estimado * tasaUsd).toLocaleString('es-CU');
+        const abonadoCUP = Math.round(r.monto_abonado * tasaUsd).toLocaleString('es-CU');
+        
+        h += `<tr class="border-b border-gray-700 align-top">
+            <td class="p-3 font-bold text-white">${r.cliente_nombre}</td>
+            <td class="p-3 text-sm whitespace-nowrap text-gray-300">${r.cliente_telefono}</td>
+            <td class="p-3 text-xs text-gray-400">${listaProd}</td>
+            <td class="p-3 text-sm whitespace-nowrap">
+                <span class="text-white font-bold">$${r.total_estimado} USD</span> <span class="text-gray-400">($${totalCUP} CUP)</span><br>
+                <span class="text-green-400 text-xs">Abonado: $${r.monto_abonado} USD ($${abonadoCUP} CUP)</span>
+            </td>
+            <td class="p-3 text-xs whitespace-nowrap text-gray-300">${r.fecha_recogida ? new Date(r.fecha_recogida).toLocaleDateString('es-CU') : 'Por definir'}</td>
+            <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorEstado}">${r.estado}</span></td>
+            <td class="p-3"><select onchange="cambiarEstadoReserva(${r.id}, this.value)" class="bg-gray-700 text-white p-1 rounded text-xs border border-gray-600 outline-none focus:ring-1 focus:ring-purple-500"><option value="pendiente" ${r.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option><option value="abonado" ${r.estado === 'abonado' ? 'selected' : ''}>Abonado 50%</option><option value="entregado" ${r.estado === 'entregado' ? 'selected' : ''}>Entregado</option><option value="cancelado" ${r.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option></select></td>
+        </tr>`;
+    });
+    t.innerHTML = h;
+}
         async function cambiarEstadoReserva(id, nuevoEstado) { await sb.from('reservas').update({ estado: nuevoEstado }).eq('id', id); cargarReservas(); }
 
         // --- CATÁLOGO PROVEEDOR ---
