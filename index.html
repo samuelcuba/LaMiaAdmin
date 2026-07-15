@@ -110,6 +110,24 @@
             </tr></thead>
             <tbody id="tabla-prov-body"></tbody>
         </table>
+                </table>
+        <!-- Controles de Paginación Proveedor -->
+        <div class="flex flex-col sm:flex-row justify-between items-center p-4 gap-4">
+            <div class="text-sm text-gray-400">
+                Mostrando <span id="prov-inicio">0</span>-<span id="prov-fin">0</span> de <span id="prov-total">0</span> productos
+            </div>
+            <div class="flex items-center gap-3">
+                <select id="select-pag-prov" onchange="cambiarPagProv()" class="bg-gray-700 text-white p-1 rounded text-sm border border-gray-600">
+                    <option value="10">10 por pág</option>
+                    <option value="25">25 por pág</option>
+                    <option value="50">50 por pág</option>
+                    <option value="100">100 por pág</option>
+                </select>
+                <button onclick="cambiarPaginaProv(-1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">⬅️ Anterior</button>
+                <button onclick="cambiarPaginaProv(1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">Siguiente ➡️</button>
+            </div>
+        </div>
+    </div>
     </div>
 
     <!-- Gestión de Reservas -->
@@ -200,6 +218,24 @@
                 </tr></thead>
                 <tbody id="tabla-body"></tbody>
             </table>
+                    </table>
+        <!-- Controles de Paginación Inventario -->
+        <div class="flex flex-col sm:flex-row justify-between items-center p-4 gap-4">
+            <div class="text-sm text-gray-400">
+                Mostrando <span id="inv-inicio">0</span>-<span id="inv-fin">0</span> de <span id="inv-total">0</span> productos
+            </div>
+            <div class="flex items-center gap-3">
+                <select id="select-pag-inv" onchange="cambiarPagInv()" class="bg-gray-700 text-white p-1 rounded text-sm border border-gray-600">
+                    <option value="10">10 por pág</option>
+                    <option value="25">25 por pág</option>
+                    <option value="50">50 por pág</option>
+                    <option value="100">100 por pág</option>
+                </select>
+                <button onclick="cambiarPaginaInv(-1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">⬅️ Anterior</button>
+                <button onclick="cambiarPaginaInv(1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">Siguiente ➡️</button>
+            </div>
+        </div>
+    </div>
         </div>
 
         <!-- FINANZAS Y CUPONES -->
@@ -394,14 +430,68 @@ function iniciarPanel() {
 
         // --- PRODUCTOS ---
         async function cargarProductos() { const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true }); if (error) return; productosCache = data; renderizarTablaProductos(); }
-        function buscarConRetraso() { clearTimeout(timeoutBusquedaAdmin); timeoutBusquedaAdmin = setTimeout(() => { renderizarTablaProductos(); }, 250); }
-        function renderizarTablaProductos() {
-            const b = document.getElementById('input-buscar').value.toLowerCase(), fS = document.getElementById('filtro-stock').value, fI = document.getElementById('filtro-img').value; const t = document.getElementById('tabla-body');
-            const f = productosCache.filter(p => { const cT = p.nombre.toLowerCase().includes(b) || (p.categoria && p.categoria.toLowerCase().includes(b)); let cS = true; if (fS === 'con' && p.existencia <= 0) cS = false; if (fS === 'sin' && p.existencia > 0) cS = false; let cI = true; const tI = p.img && p.img.trim() !== ''; if (fI === 'con' && !tI) cI = false; if (fI === 'sin' && tI) cI = false; return cT && cS && cI; });
-            if(f.length === 0) return t.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Sin resultados.</td></tr>`;
-            let h = ''; f.forEach(p => { h += `<tr class="border-b border-gray-700 hover:bg-gray-700"><td class="p-3"><img src="${p.img || 'https://via.placeholder.com/40?text=Sin+Img'}" loading="lazy" class="w-10 h-10 rounded inline-block mr-2 object-cover bg-gray-600"><span class="font-bold">${p.nombre}</span><br><span class="text-xs text-gray-400">${p.categoria}</span></td><td class="p-3 text-gray-400">${p.costo || 0}</td><td class="p-3 text-green-400 font-bold">${p.venta}</td><td class="p-3 ${p.existencia <= 0 ? 'text-red-500' : 'text-white'} font-bold">${p.existencia || 0}</td><td class="p-3 flex gap-2"><button onclick="editarProducto(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button><button onclick="eliminarProducto(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button></td></tr>`; });
-            t.innerHTML = h;
-        }
+
+        let paginaActualInv = 1;
+        let itemsPorPaginaInv = 10;
+
+function buscarConRetraso() { 
+    clearTimeout(timeoutBusquedaAdmin); 
+    timeoutBusquedaAdmin = setTimeout(() => { 
+        paginaActualInv = 1; // Resetear página al buscar
+        renderizarTablaProductos(); 
+    }, 250); 
+}
+}
+
+function renderizarTablaProductos() {
+    const b = document.getElementById('input-buscar').value.toLowerCase(), fS = document.getElementById('filtro-stock').value, fI = document.getElementById('filtro-img').value; 
+    const t = document.getElementById('tabla-body');
+    
+    const f = productosCache.filter(p => { 
+        const cT = p.nombre.toLowerCase().includes(b) || (p.categoria && p.categoria.toLowerCase().includes(b)); 
+        let cS = true; if (fS === 'con' && p.existencia <= 0) cS = false; if (fS === 'sin' && p.existencia > 0) cS = false; 
+        let cI = true; const tI = p.img && p.img.trim() !== ''; if (fI === 'con' && !tI) cI = false; if (fI === 'sin' && tI) cI = false; 
+        return cT && cS && cI; 
+    });
+
+    document.getElementById('inv-total').innerText = f.length;
+    if(f.length === 0) {
+        t.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Sin resultados.</td></tr>`;
+        document.getElementById('inv-inicio').innerText = 0;
+        document.getElementById('inv-fin').innerText = 0;
+        return;
+    }
+
+    // Lógica de Paginación
+    const inicio = (paginaActualInv - 1) * itemsPorPaginaInv;
+    const fin = Math.min(inicio + itemsPorPaginaInv, f.length);
+    const paginados = f.slice(inicio, fin);
+
+    document.getElementById('inv-inicio').innerText = inicio + 1;
+    document.getElementById('inv-fin').innerText = fin;
+
+    let h = ''; 
+    paginados.forEach(p => { 
+        h += `<tr class="border-b border-gray-700 hover:bg-gray-700"><td class="p-3"><img src="${p.img || 'https://via.placeholder.com/40?text=Sin+Img'}" loading="lazy" class="w-10 h-10 rounded inline-block mr-2 object-cover bg-gray-600"><span class="font-bold">${p.nombre}</span><br><span class="text-xs text-gray-400">${p.categoria}</span></td><td class="p-3 text-gray-400">${p.costo || 0}</td><td class="p-3 text-green-400 font-bold">${p.venta}</td><td class="p-3 ${p.existencia <= 0 ? 'text-red-500' : 'text-white'} font-bold">${p.existencia || 0}</td><td class="p-3 flex gap-2"><button onclick="editarProducto(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button><button onclick="eliminarProducto(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button></td></tr>`; 
+    });
+    t.innerHTML = h;
+}
+
+function cambiarPagInv() {
+    itemsPorPaginaInv = parseInt(document.getElementById('select-pag-inv').value);
+    paginaActualInv = 1;
+    renderizarTablaProductos();
+}
+
+function cambiarPaginaInv(dir) {
+    const totalPaginas = Math.ceil(productosCache.length / itemsPorPaginaInv);
+    paginaActualInv += dir;
+    if (paginaActualInv < 1) paginaActualInv = 1;
+    if (paginaActualInv > totalPaginas) paginaActualInv = totalPaginas;
+    renderizarTablaProductos();
+}
+        
+        
         async function guardarProducto() {
             const id = document.getElementById('edit-id').value, n = document.getElementById('nombre').value, c = parseInt(document.getElementById('costo').value) || 0, v = parseInt(document.getElementById('venta').value) || 0, e = parseInt(document.getElementById('existencia').value) || 0, cat = document.getElementById('categoria').value, subcat = document.getElementById('subcategoria').value || 'General'; 
             if (!n || !v || !cat) return; 
@@ -562,16 +652,42 @@ async function subirExcelProveedor() {
 }
 
 // --- GESTIÓN MANUAL CATÁLOGO PROVEEDOR ---
-let editandoIdProv = null;
+let catalogoProveedorCache = [];
+let paginaActualProv = 1;
+let itemsPorPaginaProv = 10;
 
 async function cargarCatalogoProveedor() {
     const { data, error } = await sb.from('catalogo_proveedor').select('*').order('id', { ascending: true });
+    if (error || !data) {
+        catalogoProveedorCache = [];
+    } else {
+        catalogoProveedorCache = data;
+    }
+    paginaActualProv = 1;
+    renderizarTablaProv();
+}
+
+function renderizarTablaProv() {
     const t = document.getElementById('tabla-prov-body');
-    if (error || !data) return t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Error.</td></tr>`;
-    if (data.length === 0) return t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Vacío.</td></tr>`;
+    const data = catalogoProveedorCache;
     
+    document.getElementById('prov-total').innerText = data.length;
+    if (data.length === 0) {
+        t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Vacío.</td></tr>`;
+        document.getElementById('prov-inicio').innerText = 0;
+        document.getElementById('prov-fin').innerText = 0;
+        return;
+    }
+
+    const inicio = (paginaActualProv - 1) * itemsPorPaginaProv;
+    const fin = Math.min(inicio + itemsPorPaginaProv, data.length);
+    const paginados = data.slice(inicio, fin);
+
+    document.getElementById('prov-inicio').innerText = inicio + 1;
+    document.getElementById('prov-fin').innerText = fin;
+
     let h = '';
-    data.forEach(p => {
+    paginados.forEach(p => {
         let detalles = [p.marca, p.modelo, p.serie, p.medidas].filter(Boolean).join(' | ');
         h += `<tr class="border-b border-gray-700 align-top">
             <td class="p-3 font-bold text-white text-sm">${p.nombre}</td>
@@ -584,6 +700,20 @@ async function cargarCatalogoProveedor() {
         </tr>`;
     });
     t.innerHTML = h;
+}
+
+function cambiarPagProv() {
+    itemsPorPaginaProv = parseInt(document.getElementById('select-pag-prov').value);
+    paginaActualProv = 1;
+    renderizarTablaProv();
+}
+
+function cambiarPaginaProv(dir) {
+    const totalPaginas = Math.ceil(catalogoProveedorCache.length / itemsPorPaginaProv);
+    paginaActualProv += dir;
+    if (paginaActualProv < 1) paginaActualProv = 1;
+    if (paginaActualProv > totalPaginas) paginaActualProv = totalPaginas;
+    renderizarTablaProv();
 }
 
 async function guardarProvManual() {
