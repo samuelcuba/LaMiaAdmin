@@ -489,28 +489,47 @@ async function subirExcelProveedor() {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(firstSheet);
+            const json = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
 
             s.innerText = `Borrando catálogo antiguo...`;
-            await sb.from('catalogo_proveedor').delete().neq('id', 0); // Borra todo
+            await sb.from('catalogo_proveedor').delete().neq('id', 0);
 
             s.innerText = `Subiendo ${json.length} productos...`;
             let insertados = 0;
+            
             for (let i = 0; i < json.length; i++) {
                 const row = json[i];
-                // ⚠️ AJUSTA 'nombre', 'categoria', 'precio' SI TU EXCEL TIENE OTRAS CABECERAS
+                
+                let nombreBase = row['Nombre'] ? String(row['Nombre']).trim() : 'Neumático';
+                let medidas = row['Medidas'] ? String(row['Medidas']).trim() : '';
+                let nombreFinal = (medidas && medidas !== '*') ? `${nombreBase} (${medidas})` : nombreBase;
+                
+                let precioStr = row['Precio Venta'] || row['Precio Costo'] || '0';
+                let precioNum = parseFloat(String(precioStr).replace(/[^0-9.]/g, '')) || 0;
+
+                // Construimos una descripción detallada con todos los campos
+                let descPartes = [];
+                if (row['Marca'] && row['Marca'] !== '*') descPartes.push(`Marca: ${row['Marca']}`);
+                if (row['Modelo'] && row['Modelo'] !== '*') descPartes.push(`Modelo: ${row['Modelo']}`);
+                if (row['Serie'] && row['Serie'] !== '*') descPartes.push(`Serie: ${row['Serie']}`);
+                if (medidas && medidas !== '*') descPartes.push(`Medidas: ${medidas}`);
+                let descripcionFinal = descPartes.join(' | ');
+
                 const prod = {
-                    nombre: row.nombre || row.Nombre || row.NOMBRE || 'Sin nombre',
-                    categoria: row.categoria || row.Categoria || 'General',
-                    precio_estimado: parseFloat(row.precio || row.precio_estimado || row.Precio || 0)
+                    nombre: nombreFinal,
+                    categoria: 'Neumáticos',
+                    precio_estimado: precioNum,
+                    descripcion: descripcionFinal
                 };
+                
                 const { error } = await sb.from('catalogo_proveedor').insert([prod]);
                 if (!error) insertados++;
             }
-            s.innerText = `✅ Éxito: ${insertados} productos importados.`;
+            
+            s.innerText = `✅ Éxito: ${insertados} productos importados correctamente.`;
             f.value = "";
         } catch (err) {
-            s.innerText = "❌ Error al leer el Excel.";
+            s.innerText = "❌ Error al leer el Excel: " + err.message;
             console.error(err);
         }
     };
