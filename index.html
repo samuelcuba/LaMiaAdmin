@@ -9,14 +9,12 @@
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
-    <!-- Agregamos la misma fuente de la tienda -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         body { font-family: 'Poppins', sans-serif; }
-        /* Efecto de vidrio para las tarjetas del panel */
         .glass-card { background: rgba(31, 41, 55, 0.8); backdrop-filter: blur(8px); border: 1px solid rgba(75, 85, 99, 0.3); }
         .admin-header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); }
     </style>
@@ -34,13 +32,15 @@
     </div>
 
     <!-- Panel Real -->
-        <div id="admin-panel" class="flex justify-between items-center mb-8 p-4 admin-header rounded-xl shadow-lg">
+    <div id="admin-panel" class="hidden max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8 p-4 admin-header rounded-xl shadow-lg">
             <h1 class="text-2xl md:text-3xl font-extrabold text-white">🛠️ Panel de La Mia</h1>
             <button onclick="cerrarSesion()" class="bg-black/30 hover:bg-black/50 text-white px-4 py-2 rounded-lg font-bold text-sm transition">🚪 Cerrar Sesión</button>
         </div>
+
         <!-- Configuración Rápida -->
         <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="p-4 bg-gray-800 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="p-4 glass-card rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-white">Estado de la Tienda</h3>
                     <p class="text-gray-400 text-sm" id="texto-estado-tienda">Tienda Abierta al público</p>
@@ -57,7 +57,7 @@
                     <button onclick="guardarTasa()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-bold text-sm">💾</button>
                 </div>
             </div>
-            <div class="p-4 bg-gray-800 rounded-xl flex justify-between items-center gap-4">
+            <div class="p-4 glass-card rounded-xl flex justify-between items-center gap-4">
                 <div class="w-full">
                     <h3 class="text-lg font-bold text-white">Canal de Pedidos</h3>
                     <select id="select-canal" class="w-full p-2 rounded text-black text-sm mt-2" onchange="cambiarCanal()">
@@ -69,91 +69,9 @@
                 </div>
             </div>
         </div>
-<!-- MÓDULO DE PEDIDOS ANTICIPADOS (RESERVAS) -->
-<div class="mt-16 border-t-4 border-purple-500 pt-8 mb-12">
-    <h2 class="text-3xl font-bold text-purple-400 mb-6">📦 Pedidos Anticipados (Reservas)</h2>
-    
-    <!-- Subir Catálogo Proveedor -->
-    <div class="p-6 bg-gray-800 rounded-xl mb-8 border border-purple-500/50">
-        <h3 class="text-xl font-bold mb-4">Subir Catálogo del Proveedor (Excel)</h3>
-        <p class="text-gray-400 text-sm mb-3">Sube tu archivo Excel. Se borrarán los productos anteriores y se cargarán los nuevos.</p>
-        <input type="file" id="excel-proveedor" accept=".xlsx, .xls, .csv" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 mb-3">
-        <button onclick="subirExcelProveedor()" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded font-bold">Importar Catálogo</button>
-        <p id="proveedor-status" class="text-sm text-gray-400 mt-2"></p>
-    </div>
-    <!-- Gestión Manual del Catálogo Proveedor -->
-    <div class="p-6 bg-gray-800 rounded-xl mb-8 border border-purple-500/50">
-        <h3 id="form-prov-title" class="text-xl font-bold mb-4">Agregar / Editar Producto Proveedor</h3>
-        <input type="hidden" id="edit-prov-id">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div class="md:col-span-2"><label class="block text-sm text-gray-400 mb-1">Nombre</label><input type="text" id="prov-nombre" class="w-full p-2 rounded text-black" placeholder="Ej: Neumático de paseo"></div>
-            <div><label class="block text-sm text-gray-400 mb-1">Categoría</label><input type="text" id="prov-categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Neumáticos"></div>
-            <div><label class="block text-sm text-gray-400 mb-1">SKU</label><input type="text" id="prov-sku" class="w-full p-2 rounded text-black"></div>
-            <div><label class="block text-sm text-gray-400 mb-1">Marca</label><input type="text" id="prov-marca" class="w-full p-2 rounded text-black"></div>
-            <div><label class="block text-sm text-gray-400 mb-1">Modelo</label><input type="text" id="prov-modelo" class="w-full p-2 rounded text-black"></div>
-            <div><label class="block text-sm text-gray-400 mb-1">Serie</label><input type="text" id="prov-serie" class="w-full p-2 rounded text-black"></div>
-            <div><label class="block text-sm text-gray-400 mb-1">Medidas</label><input type="text" id="prov-medidas" class="w-full p-2 rounded text-black" placeholder="Ej: 165/70R12"></div>
-            <div><label class="block text-sm text-gray-400 mb-1">Precio Costo (USD)</label><input type="number" id="prov-precio-costo" class="w-full p-2 rounded text-black"></div>
-            <div><label class="block text-sm text-gray-400 mb-1">Precio Venta (USD)</label><input type="number" id="prov-precio-venta" class="w-full p-2 rounded text-black"></div>
-        </div>
-        <div class="flex gap-3">
-            <button onclick="guardarProvManual()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-bold">💾 Guardar</button>
-            <button onclick="cancelarEdicionProv()" id="btn-cancelar-prov" class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded font-bold hidden">✖ Cancelar</button>
-        </div>
-    </div>
 
-    <!-- Tabla del Catálogo Proveedor -->
-    <div class="overflow-x-auto bg-gray-800 rounded-xl mb-8 shadow-lg">
-        <table class="w-full min-w-[800px] text-left border-collapse">
-            <thead><tr class="border-b border-gray-700 text-gray-400 bg-gray-900/50">
-                <th class="p-3">Nombre</th><th class="p-3">Detalles</th><th class="p-3">Precio</th><th class="p-3">Acciones</th>
-            </tr></thead>
-            <tbody id="tabla-prov-body"></tbody>
-        </table>
-                </table>
-        <!-- Controles de Paginación Proveedor -->
-        <div class="flex flex-col sm:flex-row justify-between items-center p-4 gap-4">
-            <div class="text-sm text-gray-400">
-                Mostrando <span id="prov-inicio">0</span>-<span id="prov-fin">0</span> de <span id="prov-total">0</span> productos
-            </div>
-            <div class="flex items-center gap-3">
-                <select id="select-pag-prov" onchange="cambiarPagProv()" class="bg-gray-700 text-white p-1 rounded text-sm border border-gray-600">
-                    <option value="10">10 por pág</option>
-                    <option value="25">25 por pág</option>
-                    <option value="50">50 por pág</option>
-                    <option value="100">100 por pág</option>
-                </select>
-                <button onclick="cambiarPaginaProv(-1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">⬅️ Anterior</button>
-                <button onclick="cambiarPaginaProv(1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">Siguiente ➡️</button>
-            </div>
-        </div>
-    </div>
-    </div>
-
-    <!-- Gestión de Reservas -->
-    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-        <h3 class="text-xl font-bold text-purple-300">Reservas de Clientes</h3>
-        <button onclick="exportarReservasExcel()" class="bg-green-700 hover:bg-green-800 px-4 py-2 rounded font-bold text-sm flex items-center gap-2">📊 Exportar Reservas</button>
-    </div>
-    <div class="overflow-x-auto bg-gray-800 rounded-xl shadow-lg">
-        <table class="w-full min-w-[900px] text-left border-collapse">
-            <thead>
-                <tr class="border-b border-gray-700 text-gray-400 bg-gray-900/50">
-                    <th class="p-3 whitespace-nowrap">Cliente</th>
-                    <th class="p-3 whitespace-nowrap">Teléfono</th>
-                    <th class="p-3 min-w-[250px]">Productos</th>
-                    <th class="p-3 whitespace-nowrap">Total / Abonado</th>
-                    <th class="p-3 whitespace-nowrap">Recogida</th>
-                    <th class="p-3 whitespace-nowrap">Estado</th>
-                    <th class="p-3 whitespace-nowrap">Acción</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-reservas-body"></tbody>
-        </table>
-    </div>
-</div>
         <!-- IMPORTAR JSON -->
-        <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-blue-500">
+        <div class="mb-8 p-6 glass-card rounded-xl border border-blue-500">
             <h2 class="text-xl font-bold mb-4 text-blue-400">Importar Inventario desde JSON</h2>
             <p class="text-gray-400 text-sm mb-3">Sube tu archivo JSON. Los productos nuevos se agregarán completos. Si el producto ya existe, <strong>solo se actualizarán el stock, el costo y el precio de venta</strong>.</p>
             <input type="file" id="json-file-input" accept=".json" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-3">
@@ -161,22 +79,16 @@
             <p id="json-status" class="text-sm text-gray-400 mt-2"></p>
         </div>
 
-        <!-- Formulario Agregar/Editar -->
-        <div class="mb-8 p-6 bg-gray-800 rounded-xl">
+        <!-- Formulario Agregar/Editar Producto Tienda -->
+        <div class="mb-8 p-6 glass-card rounded-xl">
             <h2 id="form-title" class="text-xl font-bold mb-4">Agregar Nuevo Producto Manualmente</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="hidden" id="edit-id">
                 <div><label class="block text-sm text-gray-400 mb-1">Nombre</label><input type="text" id="nombre" class="w-full p-2 rounded text-black"></div>
                 <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Categoría Principal</label>
-                    <input type="text" id="categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Piezas para Autos">
+                    <div><label class="block text-sm text-gray-400 mb-1">Categoría</label><input type="text" id="categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Bebidas"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Subcategoría</label><input type="text" id="subcategoria" class="w-full p-2 rounded text-black" placeholder="Ej: Lada"></div>
                 </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Subcategoría</label>
-                    <input type="text" id="subcategoria" class="w-full p-2 rounded text-black" placeholder="Ej: Lada">
-                </div>
-            </div>
                 <div class="grid grid-cols-3 gap-4">
                     <div><label class="block text-sm text-gray-400 mb-1">Costo</label><input type="number" id="costo" class="w-full p-2 rounded text-black"></div>
                     <div><label class="block text-sm text-gray-400 mb-1">Venta</label><input type="number" id="venta" class="w-full p-2 rounded text-black"></div>
@@ -195,7 +107,7 @@
             </div>
         </div>
 
-        <!-- TABLA PRODUCTOS -->
+        <!-- TABLA PRODUCTOS TIENDA -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <h2 class="text-xl font-bold text-red-400">Inventario Actual</h2>
             <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
@@ -211,31 +123,97 @@
                 </div>
             </div>
         </div>
-        <div class="overflow-x-auto bg-gray-800 rounded-xl mb-12">
-            <table class="w-full text-left">
-                <thead><tr class="border-b border-gray-700 text-gray-400">
+        <div class="overflow-x-auto glass-card rounded-xl mb-12">
+            <table class="w-full min-w-[800px] text-left border-collapse">
+                <thead><tr class="border-b border-gray-700 text-gray-400 bg-gray-900/50">
                     <th class="p-3">Producto</th><th class="p-3">Costo</th><th class="p-3">Venta</th><th class="p-3">Stock</th><th class="p-3">Acciones</th>
                 </tr></thead>
                 <tbody id="tabla-body"></tbody>
             </table>
-                    </table>
-        <!-- Controles de Paginación Inventario -->
-        <div class="flex flex-col sm:flex-row justify-between items-center p-4 gap-4">
-            <div class="text-sm text-gray-400">
-                Mostrando <span id="inv-inicio">0</span>-<span id="inv-fin">0</span> de <span id="inv-total">0</span> productos
-            </div>
-            <div class="flex items-center gap-3">
-                <select id="select-pag-inv" onchange="cambiarPagInv()" class="bg-gray-700 text-white p-1 rounded text-sm border border-gray-600">
-                    <option value="10">10 por pág</option>
-                    <option value="25">25 por pág</option>
-                    <option value="50">50 por pág</option>
-                    <option value="100">100 por pág</option>
-                </select>
-                <button onclick="cambiarPaginaInv(-1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">⬅️ Anterior</button>
-                <button onclick="cambiarPaginaInv(1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">Siguiente ➡️</button>
+            <!-- Paginación Inventario -->
+            <div class="flex flex-col sm:flex-row justify-between items-center p-4 gap-4">
+                <div class="text-sm text-gray-400">
+                    Mostrando <span id="inv-inicio">0</span>-<span id="inv-fin">0</span> de <span id="inv-total">0</span> productos
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="select-pag-inv" onchange="cambiarPagInv()" class="bg-gray-700 text-white p-1 rounded text-sm border border-gray-600">
+                        <option value="10">10 por pág</option><option value="25">25 por pág</option><option value="50">50 por pág</option><option value="100">100 por pág</option>
+                    </select>
+                    <button onclick="cambiarPaginaInv(-1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">⬅️</button>
+                    <button onclick="cambiarPaginaInv(1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">➡️</button>
+                </div>
             </div>
         </div>
-    </div>
+
+        <!-- MÓDULO DE PEDIDOS ANTICIPADOS (RESERVAS) -->
+        <div class="mt-12 border-t-4 border-purple-500 pt-8 mb-12">
+            <h2 class="text-3xl font-bold text-purple-400 mb-6">📦 Pedidos Anticipados (Reservas)</h2>
+            
+            <!-- Gestión de Reservas -->
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                <h3 class="text-xl font-bold text-purple-300">Reservas de Clientes</h3>
+            </div>
+            <div class="overflow-x-auto glass-card rounded-xl mb-12 shadow-lg">
+                <table class="w-full min-w-[900px] text-left border-collapse">
+                    <thead><tr class="border-b border-gray-700 text-gray-400 bg-gray-900/50">
+                        <th class="p-3 whitespace-nowrap">Cliente</th><th class="p-3 whitespace-nowrap">Teléfono</th><th class="p-3 min-w-[250px]">Productos</th><th class="p-3 whitespace-nowrap">Total / Abonado</th><th class="p-3 whitespace-nowrap">Recogida</th><th class="p-3 whitespace-nowrap">Estado</th><th class="p-3 whitespace-nowrap">Acción</th>
+                    </tr></thead>
+                    <tbody id="tabla-reservas-body"></tbody>
+                </table>
+            </div>
+            
+            <!-- Subir Catálogo Proveedor -->
+            <div class="p-6 glass-card rounded-xl mb-8 border border-purple-500/50">
+                <h3 class="text-xl font-bold mb-4">Subir Catálogo del Proveedor (Excel)</h3>
+                <p class="text-gray-400 text-sm mb-3">Sube tu archivo Excel. Se borrarán los productos anteriores y se cargarán los nuevos.</p>
+                <input type="file" id="excel-proveedor" accept=".xlsx, .xls, .csv" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 mb-3">
+                <button onclick="subirExcelProveedor()" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded font-bold">Importar Catálogo</button>
+                <p id="proveedor-status" class="text-sm text-gray-400 mt-2"></p>
+            </div>
+
+            <!-- Gestión Manual del Catálogo Proveedor -->
+            <div class="p-6 glass-card rounded-xl mb-8 border border-purple-500/50">
+                <h3 id="form-prov-title" class="text-xl font-bold mb-4">Agregar / Editar Producto Proveedor</h3>
+                <input type="hidden" id="edit-prov-id">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="md:col-span-2"><label class="block text-sm text-gray-400 mb-1">Nombre</label><input type="text" id="prov-nombre" class="w-full p-2 rounded text-black" placeholder="Ej: Neumático de paseo"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Categoría</label><input type="text" id="prov-categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Neumáticos"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">SKU</label><input type="text" id="prov-sku" class="w-full p-2 rounded text-black"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Marca</label><input type="text" id="prov-marca" class="w-full p-2 rounded text-black"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Modelo</label><input type="text" id="prov-modelo" class="w-full p-2 rounded text-black"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Serie</label><input type="text" id="prov-serie" class="w-full p-2 rounded text-black"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Medidas</label><input type="text" id="prov-medidas" class="w-full p-2 rounded text-black" placeholder="Ej: 165/70R12"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Precio Costo (USD)</label><input type="number" id="prov-precio-costo" class="w-full p-2 rounded text-black"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Precio Venta (USD)</label><input type="number" id="prov-precio-venta" class="w-full p-2 rounded text-black"></div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="guardarProvManual()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-bold">💾 Guardar</button>
+                    <button onclick="cancelarEdicionProv()" id="btn-cancelar-prov" class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded font-bold hidden">✖ Cancelar</button>
+                </div>
+            </div>
+
+            <!-- Tabla del Catálogo Proveedor -->
+            <div class="overflow-x-auto glass-card rounded-xl mb-8 shadow-lg">
+                <table class="w-full min-w-[800px] text-left border-collapse">
+                    <thead><tr class="border-b border-gray-700 text-gray-400 bg-gray-900/50">
+                        <th class="p-3">Nombre</th><th class="p-3">Detalles</th><th class="p-3">Precio</th><th class="p-3">Acciones</th>
+                    </tr></thead>
+                    <tbody id="tabla-prov-body"></tbody>
+                </table>
+                <!-- Paginación Proveedor -->
+                <div class="flex flex-col sm:flex-row justify-between items-center p-4 gap-4">
+                    <div class="text-sm text-gray-400">
+                        Mostrando <span id="prov-inicio">0</span>-<span id="prov-fin">0</span> de <span id="prov-total">0</span> productos
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select id="select-pag-prov" onchange="cambiarPagProv()" class="bg-gray-700 text-white p-1 rounded text-sm border border-gray-600">
+                            <option value="10">10 por pág</option><option value="25">25 por pág</option><option value="50">50 por pág</option><option value="100">100 por pág</option>
+                        </select>
+                        <button onclick="cambiarPaginaProv(-1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">⬅️</button>
+                        <button onclick="cambiarPaginaProv(1)" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">➡️</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- FINANZAS Y CUPONES -->
@@ -258,17 +236,16 @@
                 </div>
             </div>
 
-            <!-- GESTIÓN DE CUPONES (NUEVO) -->
             <div>
                 <h2 class="text-3xl font-bold text-purple-500 mt-12 mb-6">Gestión de Cupones 🎟️</h2>
-                <div class="p-4 bg-gray-800 rounded-xl mb-4">
+                <div class="p-4 glass-card rounded-xl mb-4">
                     <div class="grid grid-cols-3 gap-2">
                         <input type="text" id="cupon-codigo" placeholder="Código (Ej: EXTRA10)" class="col-span-2 p-2 rounded text-black text-sm">
                         <input type="number" id="cupon-porcentaje" placeholder="% Desc" class="p-2 rounded text-black text-sm">
                     </div>
                     <button onclick="crearCupon()" class="bg-purple-600 hover:bg-purple-700 w-full py-2 rounded font-bold text-sm mt-2">➕ Crear Cupón</button>
                 </div>
-                <div class="overflow-x-auto bg-gray-800 rounded-xl">
+                <div class="overflow-x-auto glass-card rounded-xl">
                     <table class="w-full text-left">
                         <thead><tr class="border-b border-gray-700 text-gray-400">
                             <th class="p-3">Código</th><th class="p-3">Descuento</th><th class="p-3">Acción</th>
@@ -280,7 +257,7 @@
         </div>
 
         <!-- ENVIAR NOTIFICACIÓN PUSH -->
-        <div class="mb-12 p-6 bg-gray-800 rounded-xl border border-purple-500">
+        <div class="mb-12 p-6 glass-card rounded-xl border border-purple-500">
             <h2 class="text-2xl font-bold mb-4 text-purple-400">Enviar Notificación 🔔</h2>
             <p class="text-gray-400 text-sm mb-4">Envía un aviso push a todos los clientes suscritos. Llegará aunque la app esté cerrada.</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
@@ -296,7 +273,7 @@
             <h2 class="text-3xl font-bold text-green-500 mt-12">Historial de Ventas 📝</h2>
             <button onclick="exportarVentasExcel()" class="bg-green-700 hover:bg-green-800 px-4 py-2 rounded font-bold text-sm whitespace-nowrap flex items-center gap-2 mt-12">📊 Exportar Ventas (Excel)</button>
         </div>
-        <div class="overflow-x-auto bg-gray-800 rounded-xl">
+        <div class="overflow-x-auto glass-card rounded-xl">
             <table class="w-full text-left">
                 <thead><tr class="border-b border-gray-700 text-gray-400">
                     <th class="p-3">Fecha</th><th class="p-3">Moneda</th><th class="p-3">Producto</th><th class="p-3">Cant.</th><th class="p-3">Ingreso</th><th class="p-3">Ganancia</th>
@@ -313,6 +290,9 @@
 
         let editandoId = null, mantenimientoActivo = false, productosCache = [], timeoutBusquedaAdmin = null;
         let ventasCache = [];
+        let editandoIdProv = null, catalogoProveedorCache = [];
+        let paginaActualInv = 1, itemsPorPaginaInv = 10;
+        let paginaActualProv = 1, itemsPorPaginaProv = 10;
 
         window.onload = async function() {
             const { data: { session } } = await sb.auth.getSession();
@@ -328,24 +308,12 @@
 
         async function cerrarSesion() { await sb.auth.signOut(); location.reload(); }
 
-function iniciarPanel() {
-    const loginScreen = document.getElementById('login-screen');
-    const adminPanel = document.getElementById('admin-panel');
-
-    // Verificamos que existan antes de tocarles el classList
-    if (loginScreen) loginScreen.classList.add('hidden');
-    if (adminPanel) adminPanel.classList.remove('hidden');
-
-    // Cargamos los datos igualmente
-    cargarProductos(); 
-    cargarVentas(); 
-    verificarMantenimiento(); 
-    cargarTasaActual(); 
-    cargarCanalActual(); 
-    cargarCupones();
-    cargarReservas();
-    cargarCatalogoProveedor();
-}
+        function iniciarPanel() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+            cargarProductos(); cargarVentas(); verificarMantenimiento(); cargarTasaActual(); cargarCanalActual(); cargarCupones();
+            cargarReservas(); cargarCatalogoProveedor();
+        }
 
         // --- TASA USD ---
         async function cargarTasaActual() { const { data } = await sb.from('ajustes').select('tasa_usd').eq('id', 1).single(); if (data && data.tasa_usd) document.getElementById('input-tasa-usd').value = data.tasa_usd; }
@@ -384,9 +352,7 @@ function iniciarPanel() {
         }
 
         // --- EXPORTAR EXCEL ---
-        function exportarExcel() { if (productosCache.length === 0) return; let c = "\uFEFFID,Nombre,Categoría,Costo,Venta,Stock Actual,Conteo Físico,Diferencia\n"; productosCache.forEach(p => { c += `${p.id},"${p.nombre.replace(/"/g, '""')}","${p.categoria.replace(/"/g, '""')}",${p.costo || 0},${p.venta || 0},${p.existencia || 0},,\n`; }); const b = new Blob([c], { type: 'text/csv;charset=utf-8;' }); const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = "inventario_la_mia.csv"; l.click(); }
-
-        // --- EXPORTAR VENTAS A EXCEL ---
+        function exportarExcel() { if (productosCache.length === 0) return; let c = "\uFEFFID,Nombre,Categoría,Subcategoría,Costo,Venta,Stock Actual,Conteo Físico,Diferencia\n"; productosCache.forEach(p => { c += `${p.id},"${p.nombre.replace(/"/g, '""')}","${p.categoria.replace(/"/g, '""')}","${(p.subcategoria||'').replace(/"/g, '""')}",${p.costo || 0},${p.venta || 0},${p.existencia || 0},,\n`; }); const b = new Blob([c], { type: 'text/csv;charset=utf-8;' }); const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = "inventario_la_mia.csv"; l.click(); }
         function exportarVentasExcel() {
             if (ventasCache.length === 0) return alert("No hay ventas para exportar.");
             let c = "\uFEFFFecha,Moneda,Producto,Cantidad,Precio Venta,Costo,Total Venta,Ganancia\n";
@@ -413,7 +379,7 @@ function iniciarPanel() {
                         if (!eI.has(p.id)) {
                             if (p.imagenBase64) { try { const fT = `prod_${p.id}_${Date.now()}.jpg`; let iF = base64ToFile(p.imagenBase64, fT); const o = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true }; const cF = await imageCompression(iF, o); const { error: uE } = await sb.storage.from('imagenes').upload(cF.name, cF); if (!uE) { const { data } = sb.storage.from('imagenes').getPublicUrl(cF.name); iU = data.publicUrl; } } catch (e) {} } else if (p.imagenPath) iU = p.imagenPath;
                         }
-                        const pD = { id: p.id, nombre: p.nombreProducto || p.nombre, costo: p.precioCosto || p.costo || 0, venta: p.precio || p.venta || 0, existencia: p.stockActual || p.existencia || 0, categoria: p.categoria || "OTRO", img: iU };
+                        const pD = { id: p.id, nombre: p.nombreProducto || p.nombre, costo: p.precioCosto || p.costo || 0, venta: p.precio || p.venta || 0, existencia: p.stockActual || p.existencia || 0, categoria: p.categoria || "OTRO", subcategoria: p.subcategoria || "General", img: iU };
                         if (eI.has(p.id)) aP.push({ id: pD.id, costo: pD.costo, venta: pD.venta, existencia: pD.existencia }); else nP.push(pD);
                         s.innerText = `Preparando... (${nP.length + aP.length}/${d.length})`;
                     }
@@ -428,135 +394,159 @@ function iniciarPanel() {
         function previsualizarImagen() { const f = document.getElementById('img-file').files[0]; if (f) { const p = document.getElementById('img-preview'); p.src = URL.createObjectURL(f); p.classList.remove('hidden'); } }
         async function subirImagenSupabase() { const fI = document.getElementById('img-file'); if (fI.files.length === 0) return null; const f = fI.files[0]; const p = document.getElementById('img-preview'); p.classList.remove('hidden'); p.src = URL.createObjectURL(f); try { const o = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true }; const cF = await imageCompression(f, o); const fN = `combo_${Date.now()}.jpg`; const { error } = await sb.storage.from('imagenes').upload(fN, cF, { contentType: 'image/jpeg' }); if (error) throw error; const { data } = sb.storage.from('imagenes').getPublicUrl(fN); return data.publicUrl; } catch (e) { alert("Error imagen."); return null; } }
 
-        // --- PRODUCTOS ---
+        // --- PRODUCTOS TIENDA ---
         async function cargarProductos() { const { data, error } = await sb.from('productos').select('*').order('id', { ascending: true }); if (error) return; productosCache = data; renderizarTablaProductos(); }
+        function buscarConRetraso() { clearTimeout(timeoutBusquedaAdmin); timeoutBusquedaAdmin = setTimeout(() => { paginaActualInv = 1; renderizarTablaProductos(); }, 250); }
+        function renderizarTablaProductos() {
+            const b = document.getElementById('input-buscar').value.toLowerCase(), fS = document.getElementById('filtro-stock').value, fI = document.getElementById('filtro-img').value; const t = document.getElementById('tabla-body');
+            const f = productosCache.filter(p => { const cT = p.nombre.toLowerCase().includes(b) || (p.categoria && p.categoria.toLowerCase().includes(b)); let cS = true; if (fS === 'con' && p.existencia <= 0) cS = false; if (fS === 'sin' && p.existencia > 0) cS = false; let cI = true; const tI = p.img && p.img.trim() !== ''; if (fI === 'con' && !tI) cI = false; if (fI === 'sin' && tI) cI = false; return cT && cS && cI; });
+            
+            document.getElementById('inv-total').innerText = f.length;
+            if(f.length === 0) {
+                t.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Sin resultados.</td></tr>`;
+                document.getElementById('inv-inicio').innerText = 0;
+                document.getElementById('inv-fin').innerText = 0;
+                return;
+            }
 
-        let paginaActualInv = 1;
-        let itemsPorPaginaInv = 10;
+            const inicio = (paginaActualInv - 1) * itemsPorPaginaInv;
+            const fin = Math.min(inicio + itemsPorPaginaInv, f.length);
+            const paginados = f.slice(inicio, fin);
 
-function buscarConRetraso() { 
-    clearTimeout(timeoutBusquedaAdmin); 
-    timeoutBusquedaAdmin = setTimeout(() => { 
-        paginaActualInv = 1; // Resetear página al buscar
-        renderizarTablaProductos(); 
-    }, 250); 
-}
-}
+            document.getElementById('inv-inicio').innerText = inicio + 1;
+            document.getElementById('inv-fin').innerText = fin;
 
-function renderizarTablaProductos() {
-    const b = document.getElementById('input-buscar').value.toLowerCase(), fS = document.getElementById('filtro-stock').value, fI = document.getElementById('filtro-img').value; 
-    const t = document.getElementById('tabla-body');
-    
-    const f = productosCache.filter(p => { 
-        const cT = p.nombre.toLowerCase().includes(b) || (p.categoria && p.categoria.toLowerCase().includes(b)); 
-        let cS = true; if (fS === 'con' && p.existencia <= 0) cS = false; if (fS === 'sin' && p.existencia > 0) cS = false; 
-        let cI = true; const tI = p.img && p.img.trim() !== ''; if (fI === 'con' && !tI) cI = false; if (fI === 'sin' && tI) cI = false; 
-        return cT && cS && cI; 
-    });
+            let h = ''; 
+            paginados.forEach(p => { 
+                h += `<tr class="border-b border-gray-700 hover:bg-gray-700"><td class="p-3"><img src="${p.img || 'https://via.placeholder.com/40?text=Sin+Img'}" loading="lazy" class="w-10 h-10 rounded inline-block mr-2 object-cover bg-gray-600"><span class="font-bold">${p.nombre}</span><br><span class="text-xs text-gray-400">${p.categoria}</span></td><td class="p-3 text-gray-400">${p.costo || 0}</td><td class="p-3 text-green-400 font-bold">${p.venta}</td><td class="p-3 ${p.existencia <= 0 ? 'text-red-500' : 'text-white'} font-bold">${p.existencia || 0}</td><td class="p-3 flex gap-2"><button onclick="editarProducto(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button><button onclick="eliminarProducto(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button></td></tr>`; 
+            });
+            t.innerHTML = h;
+        }
+        function cambiarPagInv() { itemsPorPaginaInv = parseInt(document.getElementById('select-pag-inv').value); paginaActualInv = 1; renderizarTablaProductos(); }
+        function cambiarPaginaInv(dir) { const totalPaginas = Math.ceil(productosCache.length / itemsPorPaginaInv); paginaActualInv += dir; if (paginaActualInv < 1) paginaActualInv = 1; if (paginaActualInv > totalPaginas) paginaActualInv = totalPaginas; renderizarTablaProductos(); }
 
-    document.getElementById('inv-total').innerText = f.length;
-    if(f.length === 0) {
-        t.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Sin resultados.</td></tr>`;
-        document.getElementById('inv-inicio').innerText = 0;
-        document.getElementById('inv-fin').innerText = 0;
-        return;
-    }
-
-    // Lógica de Paginación
-    const inicio = (paginaActualInv - 1) * itemsPorPaginaInv;
-    const fin = Math.min(inicio + itemsPorPaginaInv, f.length);
-    const paginados = f.slice(inicio, fin);
-
-    document.getElementById('inv-inicio').innerText = inicio + 1;
-    document.getElementById('inv-fin').innerText = fin;
-
-    let h = ''; 
-    paginados.forEach(p => { 
-        h += `<tr class="border-b border-gray-700 hover:bg-gray-700"><td class="p-3"><img src="${p.img || 'https://via.placeholder.com/40?text=Sin+Img'}" loading="lazy" class="w-10 h-10 rounded inline-block mr-2 object-cover bg-gray-600"><span class="font-bold">${p.nombre}</span><br><span class="text-xs text-gray-400">${p.categoria}</span></td><td class="p-3 text-gray-400">${p.costo || 0}</td><td class="p-3 text-green-400 font-bold">${p.venta}</td><td class="p-3 ${p.existencia <= 0 ? 'text-red-500' : 'text-white'} font-bold">${p.existencia || 0}</td><td class="p-3 flex gap-2"><button onclick="editarProducto(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button><button onclick="eliminarProducto(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button></td></tr>`; 
-    });
-    t.innerHTML = h;
-}
-
-function cambiarPagInv() {
-    itemsPorPaginaInv = parseInt(document.getElementById('select-pag-inv').value);
-    paginaActualInv = 1;
-    renderizarTablaProductos();
-}
-
-function cambiarPaginaInv(dir) {
-    const totalPaginas = Math.ceil(productosCache.length / itemsPorPaginaInv);
-    paginaActualInv += dir;
-    if (paginaActualInv < 1) paginaActualInv = 1;
-    if (paginaActualInv > totalPaginas) paginaActualInv = totalPaginas;
-    renderizarTablaProductos();
-}
-        
-        
         async function guardarProducto() {
-            const id = document.getElementById('edit-id').value, n = document.getElementById('nombre').value, c = parseInt(document.getElementById('costo').value) || 0, v = parseInt(document.getElementById('venta').value) || 0, e = parseInt(document.getElementById('existencia').value) || 0, cat = document.getElementById('categoria').value, subcat = document.getElementById('subcategoria').value || 'General'; 
-            if (!n || !v || !cat) return; 
-            let iU = document.getElementById('img').value;
+            const id = document.getElementById('edit-id').value, n = document.getElementById('nombre').value, c = parseInt(document.getElementById('costo').value) || 0, v = parseInt(document.getElementById('venta').value) || 0, e = parseInt(document.getElementById('existencia').value) || 0, cat = document.getElementById('categoria').value, subcat = document.getElementById('subcategoria').value || 'General'; if (!n || !v || !cat) return; let iU = document.getElementById('img').value;
             try { 
-                if (document.getElementById('img-file').files.length > 0) iU = await subirImagenSupabase(); 
-                if (!iU) return; 
-                
-                if (editandoId !== null) { 
-                    const { error } = await sb.from('productos').update({ nombre: n, costo: c, venta: v, existencia: e, categoria: cat, subcategoria: subcat, img: iU }).eq('id', editandoId); 
-                    if (error) throw error; alert("Actualizado"); 
-                } else { 
-                    const { data: mD } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1); 
-                    const nI = mD.length > 0 ? mD[0].id + 1 : 1; 
-                    const { error } = await sb.from('productos').insert([{ id: nI, nombre: n, costo: c, venta: v, existencia: e, categoria: cat, subcategoria: subcat, img: iU }]); 
-                    if (error) throw error; alert("Agregado"); 
-                } 
+                if (document.getElementById('img-file').files.length > 0) iU = await subirImagenSupabase(); if (!iU) return; 
+                if (editandoId !== null) { const { error } = await sb.from('productos').update({ nombre: n, costo: c, venta: v, existencia: e, categoria: cat, subcategoria: subcat, img: iU }).eq('id', editandoId); if (error) throw error; alert("Actualizado"); } 
+                else { const { data: mD } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1); const nI = mD.length > 0 ? mD[0].id + 1 : 1; const { error } = await sb.from('productos').insert([{ id: nI, nombre: n, costo: c, venta: v, existencia: e, categoria: cat, subcategoria: subcat, img: iU }]); if (error) throw error; alert("Agregado"); } 
                 cancelarEdicion(); cargarProductos(); 
             } catch (e) { alert("Error: " + e.message); }
         }
-        function editarProducto(id) {
-        const p = productosCache.find(x => x.id === id);
-        if (!p) return;
-        
-        editandoId = id;
-        
-        document.getElementById('edit-id').value = id;
-        document.getElementById('nombre').value = p.nombre;
-        document.getElementById('costo').value = p.costo;
-        document.getElementById('venta').value = p.venta;
-        document.getElementById('existencia').value = p.existencia;
-        document.getElementById('categoria').value = p.categoria;
-        
-        // --- LÍNEA NUEVA PARA SUBCATEGORÍA ---
-        document.getElementById('subcategoria').value = p.subcategoria || '';
-        // -------------------------------------
-        
-        document.getElementById('img').value = p.img;
-        document.getElementById('img-preview').src = p.img;
-        document.getElementById('img-preview').classList.remove('hidden');
-        document.getElementById('form-title').innerText = "Editando: " + p.nombre;
-        document.getElementById('btn-cancelar').classList.remove('hidden');
-        window.scrollTo(0, 0);
-    }
-   async function eliminarProducto(id) { if (!confirm("¿Eliminar?")) return; const { error } = await sb.from('productos').delete().eq('id', id); if (error) return; cargarProductos(); }
-   function cancelarEdicion() {
-    editandoId = null;
-    document.getElementById('edit-id').value = '';
-    document.getElementById('nombre').value = '';
-    document.getElementById('costo').value = '';
-    document.getElementById('venta').value = '';
-    document.getElementById('existencia').value = '0';
-    document.getElementById('categoria').value = '';
-    
-    // --- LÍNEA NUEVA PARA SUBCATEGORÍA ---
-    document.getElementById('subcategoria').value = '';
-    // -------------------------------------
-    
-    document.getElementById('img').value = '';
-    document.getElementById('img-file').value = '';
-    document.getElementById('img-preview').src = '';
-    document.getElementById('img-preview').classList.add('hidden');
-    document.getElementById('form-title').innerText = "Agregar Nuevo Producto Manualmente";
-    document.getElementById('btn-cancelar').classList.add('hidden');
-}
+        function editarProducto(id) { const p = productosCache.find(x => x.id === id); if (!p) return; editandoId = id; document.getElementById('edit-id').value = id; document.getElementById('nombre').value = p.nombre; document.getElementById('costo').value = p.costo; document.getElementById('venta').value = p.venta; document.getElementById('existencia').value = p.existencia; document.getElementById('categoria').value = p.categoria; document.getElementById('subcategoria').value = p.subcategoria || ''; document.getElementById('img').value = p.img; document.getElementById('img-preview').src = p.img; document.getElementById('img-preview').classList.remove('hidden'); document.getElementById('form-title').innerText = "Editando: " + p.nombre; document.getElementById('btn-cancelar').classList.remove('hidden'); window.scrollTo(0, 0); }
+        async function eliminarProducto(id) { if (!confirm("¿Eliminar?")) return; const { error } = await sb.from('productos').delete().eq('id', id); if (error) return; cargarProductos(); }
+        function cancelarEdicion() { editandoId = null; document.getElementById('edit-id').value = ''; document.getElementById('nombre').value = ''; document.getElementById('costo').value = ''; document.getElementById('venta').value = ''; document.getElementById('existencia').value = '0'; document.getElementById('categoria').value = ''; document.getElementById('subcategoria').value = ''; document.getElementById('img').value = ''; document.getElementById('img-file').value = ''; document.getElementById('img-preview').src = ''; document.getElementById('img-preview').classList.add('hidden'); document.getElementById('form-title').innerText = "Agregar Nuevo Producto"; document.getElementById('btn-cancelar').classList.add('hidden'); }
+
+        // --- RESERVAS ---
+        async function cargarReservas() {
+            const { data, error } = await sb.from('reservas').select('*').order('fecha_creacion', { ascending: false });
+            const t = document.getElementById('tabla-reservas-body');
+            if (error || !data) return t.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Error al cargar.</td></tr>`;
+            if (data.length === 0) return t.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Aún no hay reservas.</td></tr>`;
+            let h = '';
+            data.forEach(r => {
+                const productos = JSON.parse(r.productos);
+                let listaProd = productos.map(p => `${p.cantidad}x ${p.nombre}`).join('<br>');
+                let colorEstado = 'bg-yellow-900 text-yellow-300';
+                if (r.estado === 'abonado') colorEstado = 'bg-blue-900 text-blue-300';
+                if (r.estado === 'entregado') colorEstado = 'bg-green-900 text-green-300';
+                if (r.estado === 'cancelado') colorEstado = 'bg-red-900 text-red-300';
+                h += `<tr class="border-b border-gray-700 align-top">
+                    <td class="p-3 font-bold text-white">${r.cliente_nombre}</td>
+                    <td class="p-3 text-sm whitespace-nowrap text-gray-300">${r.cliente_telefono}</td>
+                    <td class="p-3 text-xs text-gray-400">${listaProd}</td>
+                    <td class="p-3 text-sm whitespace-nowrap"><span class="text-white font-bold">$${r.total_estimado}</span><br><span class="text-green-400 text-xs">($${r.monto_abonado} abonado)</span></td>
+                    <td class="p-3 text-xs whitespace-nowrap text-gray-300">${r.fecha_recogida ? new Date(r.fecha_recogida).toLocaleDateString('es-CU') : 'Por definir'}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorEstado}">${r.estado}</span></td>
+                    <td class="p-3"><select onchange="cambiarEstadoReserva(${r.id}, this.value)" class="bg-gray-700 text-white p-1 rounded text-xs border border-gray-600 outline-none focus:ring-1 focus:ring-purple-500"><option value="pendiente" ${r.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option><option value="abonado" ${r.estado === 'abonado' ? 'selected' : ''}>Abonado 50%</option><option value="entregado" ${r.estado === 'entregado' ? 'selected' : ''}>Entregado</option><option value="cancelado" ${r.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option></select></td>
+                </tr>`;
+            });
+            t.innerHTML = h;
+        }
+        async function cambiarEstadoReserva(id, nuevoEstado) { await sb.from('reservas').update({ estado: nuevoEstado }).eq('id', id); cargarReservas(); }
+
+        // --- CATÁLOGO PROVEEDOR ---
+        async function subirExcelProveedor() {
+            const f = document.getElementById('excel-proveedor'); const s = document.getElementById('proveedor-status');
+            if (f.files.length === 0) return; s.innerText = "Leyendo Excel...";
+            const file = f.files[0]; const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+                    s.innerText = `Borrando catálogo antiguo...`;
+                    await sb.from('catalogo_proveedor').delete().neq('id', 0);
+                    s.innerText = `Subiendo ${json.length} productos...`;
+                    let insertados = 0;
+                    const cleanVal = (val) => (val && String(val).trim() !== '*') ? String(val).trim() : '';
+                    for (let i = 0; i < json.length; i++) {
+                        const row = json[i];
+                        let nombreBase = cleanVal(row['Nombre']) || 'Producto';
+                        let medidas = cleanVal(row['Medidas']);
+                        let nombreFinal = medidas ? `${nombreBase} (${medidas})` : nombreBase;
+                        const prod = {
+                            nombre: nombreFinal, categoria: 'Neumáticos', sku: cleanVal(row['SKU']), marca: cleanVal(row['Marca']), modelo: cleanVal(row['Modelo']), serie: cleanVal(row['Serie']), medidas: medidas,
+                            precio_costo: parseFloat(String(cleanVal(row['Precio Costo']) || '0').replace(/[^0-9.]/g, '')) || 0,
+                            precio_venta: parseFloat(String(cleanVal(row['Precio Venta']) || '0').replace(/[^0-9.]/g, '')) || 0
+                        };
+                        const { error } = await sb.from('catalogo_proveedor').insert([prod]);
+                        if (!error) insertados++;
+                    }
+                    s.innerText = `✅ Éxito: ${insertados} productos importados.`; f.value = ""; cargarCatalogoProveedor();
+                } catch (err) { s.innerText = "❌ Error: " + err.message; }
+            }; reader.readAsArrayBuffer(file);
+        }
+
+        async function cargarCatalogoProveedor() {
+            const { data, error } = await sb.from('catalogo_proveedor').select('*').order('id', { ascending: true });
+            if (error || !data) { catalogoProveedorCache = []; } else { catalogoProveedorCache = data; }
+            paginaActualProv = 1; renderizarTablaProv();
+        }
+
+        function renderizarTablaProv() {
+            const t = document.getElementById('tabla-prov-body'); const data = catalogoProveedorCache;
+            document.getElementById('prov-total').innerText = data.length;
+            if (data.length === 0) { t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Vacío.</td></tr>`; document.getElementById('prov-inicio').innerText = 0; document.getElementById('prov-fin').innerText = 0; return; }
+            const inicio = (paginaActualProv - 1) * itemsPorPaginaProv; const fin = Math.min(inicio + itemsPorPaginaProv, data.length); const paginados = data.slice(inicio, fin);
+            document.getElementById('prov-inicio').innerText = inicio + 1; document.getElementById('prov-fin').innerText = fin;
+            let h = '';
+            paginados.forEach(p => {
+                let detalles = [p.marca, p.modelo, p.serie, p.medidas].filter(Boolean).join(' | ');
+                h += `<tr class="border-b border-gray-700 align-top"><td class="p-3 font-bold text-white text-sm">${p.nombre}</td><td class="p-3 text-xs text-gray-400">${detalles || 'N/A'}</td><td class="p-3 text-sm text-green-400 font-bold">$${p.precio_venta} USD</td><td class="p-3 flex gap-2"><button onclick="editarProv(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button><button onclick="eliminarProv(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button></td></tr>`;
+            });
+            t.innerHTML = h;
+        }
+        function cambiarPagProv() { itemsPorPaginaProv = parseInt(document.getElementById('select-pag-prov').value); paginaActualProv = 1; renderizarTablaProv(); }
+        function cambiarPaginaProv(dir) { const totalPaginas = Math.ceil(catalogoProveedorCache.length / itemsPorPaginaProv); paginaActualProv += dir; if (paginaActualProv < 1) paginaActualProv = 1; if (paginaActualProv > totalPaginas) paginaActualProv = totalPaginas; renderizarTablaProv(); }
+
+        async function guardarProvManual() {
+            const id = document.getElementById('edit-prov-id').value;
+            const prod = {
+                nombre: document.getElementById('prov-nombre').value.trim(), categoria: document.getElementById('prov-categoria').value.trim() || 'General', sku: document.getElementById('prov-sku').value.trim(), marca: document.getElementById('prov-marca').value.trim(), modelo: document.getElementById('prov-modelo').value.trim(), serie: document.getElementById('prov-serie').value.trim(), medidas: document.getElementById('prov-medidas').value.trim(),
+                precio_costo: parseFloat(document.getElementById('prov-precio-costo').value) || 0, precio_venta: parseFloat(document.getElementById('prov-precio-venta').value) || 0
+            };
+            if (!prod.nombre) return alert("El nombre es obligatorio.");
+            try {
+                if (editandoIdProv !== null) { const { error } = await sb.from('catalogo_proveedor').update(prod).eq('id', editandoIdProv); if (error) throw error; } 
+                else { const { error } = await sb.from('catalogo_proveedor').insert([prod]); if (error) throw error; }
+                cancelarEdicionProv(); cargarCatalogoProveedor();
+            } catch (e) { alert("Error: " + e.message); }
+        }
+        function editarProv(id) {
+            sb.from('catalogo_proveedor').select('*').eq('id', id).single().then(({ data, error }) => {
+                if (error || !data) return; editandoIdProv = id;
+                document.getElementById('edit-prov-id').value = id; document.getElementById('prov-nombre').value = data.nombre; document.getElementById('prov-categoria').value = data.categoria; document.getElementById('prov-sku').value = data.sku || ''; document.getElementById('prov-marca').value = data.marca || ''; document.getElementById('prov-modelo').value = data.modelo || ''; document.getElementById('prov-serie').value = data.serie || ''; document.getElementById('prov-medidas').value = data.medidas || ''; document.getElementById('prov-precio-costo').value = data.precio_costo || 0; document.getElementById('prov-precio-venta').value = data.precio_venta || 0;
+                document.getElementById('form-prov-title').innerText = "Editando: " + data.nombre; document.getElementById('btn-cancelar-prov').classList.remove('hidden'); window.scrollTo(0, 0);
+            });
+        }
+        function cancelarEdicionProv() {
+            editandoIdProv = null; document.getElementById('edit-prov-id').value = ''; document.getElementById('prov-nombre').value = ''; document.getElementById('prov-categoria').value = ''; document.getElementById('prov-sku').value = ''; document.getElementById('prov-marca').value = ''; document.getElementById('prov-modelo').value = ''; document.getElementById('prov-serie').value = ''; document.getElementById('prov-medidas').value = ''; document.getElementById('prov-precio-costo').value = ''; document.getElementById('prov-precio-venta').value = '';
+            document.getElementById('form-prov-title').innerText = "Agregar / Editar Producto Proveedor"; document.getElementById('btn-cancelar-prov').classList.add('hidden');
+        }
+        async function eliminarProv(id) { if (!confirm("¿Eliminar?")) return; const { error } = await sb.from('catalogo_proveedor').delete().eq('id', id); if (error) return alert("Error."); cargarCatalogoProveedor(); }
 
         // --- FINANZAS ---
         async function cargarVentas() {
@@ -572,269 +562,19 @@ function cambiarPaginaInv(dir) {
 
         // --- NOTIFICACIONES PUSH ---
         async function enviarPush() {
-            const titulo = document.getElementById('push-titulo').value.trim();
-            const mensaje = document.getElementById('push-mensaje').value.trim();
-            const status = document.getElementById('push-status');
+            const titulo = document.getElementById('push-titulo').value.trim(); const mensaje = document.getElementById('push-mensaje').value.trim(); const status = document.getElementById('push-status');
             if (!titulo || !mensaje) { status.innerText = "Completa título y mensaje."; status.className = "text-sm text-red-400 mt-2"; return; }
             status.innerText = "Enviando..."; status.className = "text-sm text-gray-400 mt-2";
             try {
                 const functionUrl = SUPABASE_URL.replace('/co', '/co') + '/functions/v1/push-notification';
-                const res = await fetch(functionUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
-                    body: JSON.stringify({ titulo, mensaje })
-                });
+                const res = await fetch(functionUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY }, body: JSON.stringify({ titulo, mensaje }) });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error ' + res.status);
-                const enviados = data.enviados !== undefined ? data.enviados : '?';
-                const fallidos = data.fallidos !== undefined ? data.fallidos : 0;
-                status.innerText = `✅ ${enviados} notificaciones enviadas${fallidos > 0 ? `, ${fallidos} fallidas` : ''}.`;
-                status.className = "text-sm text-green-400 mt-2";
+                const enviados = data.enviados !== undefined ? data.enviados : '?'; const fallidos = data.fallidos !== undefined ? data.fallidos : 0;
+                status.innerText = `✅ ${enviados} notificaciones enviadas${fallidos > 0 ? `, ${fallidos} fallidas` : ''}.`; status.className = "text-sm text-green-400 mt-2";
                 document.getElementById('push-titulo').value = ''; document.getElementById('push-mensaje').value = '';
-            } catch (e) {
-                status.innerText = "❌ Error: " + (e.message || "no se pudo enviar.");
-                status.className = "text-sm text-red-400 mt-2";
-            }
+            } catch (e) { status.innerText = "❌ Error: " + (e.message || "no se pudo enviar."); status.className = "text-sm text-red-400 mt-2"; }
         }
-
-// --- PEDIDOS ANTICIPADOS ---
-async function subirExcelProveedor() {
-    const f = document.getElementById('excel-proveedor');
-    const s = document.getElementById('proveedor-status');
-    if (f.files.length === 0) return;
-    s.innerText = "Leyendo Excel...";
-    
-    const file = f.files[0];
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
-
-            s.innerText = `Borrando catálogo antiguo...`;
-            await sb.from('catalogo_proveedor').delete().neq('id', 0);
-
-            s.innerText = `Subiendo ${json.length} productos...`;
-            let insertados = 0;
-            const cleanVal = (val) => (val && String(val).trim() !== '*') ? String(val).trim() : '';
-            
-            for (let i = 0; i < json.length; i++) {
-                const row = json[i];
-                let nombreBase = cleanVal(row['Nombre']) || 'Producto';
-                let medidas = cleanVal(row['Medidas']);
-                let nombreFinal = medidas ? `${nombreBase} (${medidas})` : nombreBase;
-                
-                const prod = {
-                    nombre: nombreFinal,
-                    categoria: 'Neumáticos',
-                    sku: cleanVal(row['SKU']),
-                    marca: cleanVal(row['Marca']),
-                    modelo: cleanVal(row['Modelo']),
-                    serie: cleanVal(row['Serie']),
-                    medidas: medidas,
-                    precio_costo: parseFloat(String(cleanVal(row['Precio Costo']) || '0').replace(/[^0-9.]/g, '')) || 0,
-                    precio_venta: parseFloat(String(cleanVal(row['Precio Venta']) || '0').replace(/[^0-9.]/g, '')) || 0
-                };
-                
-                const { error } = await sb.from('catalogo_proveedor').insert([prod]);
-                if (!error) insertados++;
-            }
-            s.innerText = `✅ Éxito: ${insertados} productos importados.`;
-            f.value = "";
-            cargarCatalogoProveedor();
-        } catch (err) {
-            s.innerText = "❌ Error: " + err.message;
-        }
-    };
-    reader.readAsArrayBuffer(file);
-}
-
-// --- GESTIÓN MANUAL CATÁLOGO PROVEEDOR ---
-let catalogoProveedorCache = [];
-let paginaActualProv = 1;
-let itemsPorPaginaProv = 10;
-
-async function cargarCatalogoProveedor() {
-    const { data, error } = await sb.from('catalogo_proveedor').select('*').order('id', { ascending: true });
-    if (error || !data) {
-        catalogoProveedorCache = [];
-    } else {
-        catalogoProveedorCache = data;
-    }
-    paginaActualProv = 1;
-    renderizarTablaProv();
-}
-
-function renderizarTablaProv() {
-    const t = document.getElementById('tabla-prov-body');
-    const data = catalogoProveedorCache;
-    
-    document.getElementById('prov-total').innerText = data.length;
-    if (data.length === 0) {
-        t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Vacío.</td></tr>`;
-        document.getElementById('prov-inicio').innerText = 0;
-        document.getElementById('prov-fin').innerText = 0;
-        return;
-    }
-
-    const inicio = (paginaActualProv - 1) * itemsPorPaginaProv;
-    const fin = Math.min(inicio + itemsPorPaginaProv, data.length);
-    const paginados = data.slice(inicio, fin);
-
-    document.getElementById('prov-inicio').innerText = inicio + 1;
-    document.getElementById('prov-fin').innerText = fin;
-
-    let h = '';
-    paginados.forEach(p => {
-        let detalles = [p.marca, p.modelo, p.serie, p.medidas].filter(Boolean).join(' | ');
-        h += `<tr class="border-b border-gray-700 align-top">
-            <td class="p-3 font-bold text-white text-sm">${p.nombre}</td>
-            <td class="p-3 text-xs text-gray-400">${detalles || 'N/A'}</td>
-            <td class="p-3 text-sm text-green-400 font-bold">$${p.precio_venta} USD</td>
-            <td class="p-3 flex gap-2">
-                <button onclick="editarProv(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button>
-                <button onclick="eliminarProv(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button>
-            </td>
-        </tr>`;
-    });
-    t.innerHTML = h;
-}
-
-function cambiarPagProv() {
-    itemsPorPaginaProv = parseInt(document.getElementById('select-pag-prov').value);
-    paginaActualProv = 1;
-    renderizarTablaProv();
-}
-
-function cambiarPaginaProv(dir) {
-    const totalPaginas = Math.ceil(catalogoProveedorCache.length / itemsPorPaginaProv);
-    paginaActualProv += dir;
-    if (paginaActualProv < 1) paginaActualProv = 1;
-    if (paginaActualProv > totalPaginas) paginaActualProv = totalPaginas;
-    renderizarTablaProv();
-}
-
-async function guardarProvManual() {
-    const id = document.getElementById('edit-prov-id').value;
-    const prod = {
-        nombre: document.getElementById('prov-nombre').value.trim(),
-        categoria: document.getElementById('prov-categoria').value.trim() || 'General',
-        sku: document.getElementById('prov-sku').value.trim(),
-        marca: document.getElementById('prov-marca').value.trim(),
-        modelo: document.getElementById('prov-modelo').value.trim(),
-        serie: document.getElementById('prov-serie').value.trim(),
-        medidas: document.getElementById('prov-medidas').value.trim(),
-        precio_costo: parseFloat(document.getElementById('prov-precio-costo').value) || 0,
-        precio_venta: parseFloat(document.getElementById('prov-precio-venta').value) || 0
-    };
-    
-    if (!prod.nombre) return alert("El nombre es obligatorio.");
-    
-    try {
-        if (editandoIdProv !== null) {
-            const { error } = await sb.from('catalogo_proveedor').update(prod).eq('id', editandoIdProv);
-            if (error) throw error;
-        } else {
-            const { error } = await sb.from('catalogo_proveedor').insert([prod]);
-            if (error) throw error;
-        }
-        cancelarEdicionProv();
-        cargarCatalogoProveedor();
-    } catch (e) { alert("Error: " + e.message); }
-}
-
-function editarProv(id) {
-    sb.from('catalogo_proveedor').select('*').eq('id', id).single().then(({ data, error }) => {
-        if (error || !data) return;
-        editandoIdProv = id;
-        document.getElementById('edit-prov-id').value = id;
-        document.getElementById('prov-nombre').value = data.nombre;
-        document.getElementById('prov-categoria').value = data.categoria;
-        document.getElementById('prov-sku').value = data.sku || '';
-        document.getElementById('prov-marca').value = data.marca || '';
-        document.getElementById('prov-modelo').value = data.modelo || '';
-        document.getElementById('prov-serie').value = data.serie || '';
-        document.getElementById('prov-medidas').value = data.medidas || '';
-        document.getElementById('prov-precio-costo').value = data.precio_costo || 0;
-        document.getElementById('prov-precio-venta').value = data.precio_venta || 0;
-        document.getElementById('form-prov-title').innerText = "Editando: " + data.nombre;
-        document.getElementById('btn-cancelar-prov').classList.remove('hidden');
-        window.scrollTo(0, 0);
-    });
-}
-
-function cancelarEdicionProv() {
-    editandoIdProv = null;
-    document.getElementById('edit-prov-id').value = '';
-    document.getElementById('prov-nombre').value = '';
-    document.getElementById('prov-categoria').value = '';
-    document.getElementById('prov-sku').value = '';
-    document.getElementById('prov-marca').value = '';
-    document.getElementById('prov-modelo').value = '';
-    document.getElementById('prov-serie').value = '';
-    document.getElementById('prov-medidas').value = '';
-    document.getElementById('prov-precio-costo').value = '';
-    document.getElementById('prov-precio-venta').value = '';
-    document.getElementById('form-prov-title').innerText = "Agregar / Editar Producto Proveedor";
-    document.getElementById('btn-cancelar-prov').classList.add('hidden');
-}
-
-async function eliminarProv(id) {
-    if (!confirm("¿Eliminar este producto del catálogo proveedor?")) return;
-    const { error } = await sb.from('catalogo_proveedor').delete().eq('id', id);
-    if (error) return alert("Error al eliminar.");
-    cargarCatalogoProveedor();
-}
-        
-async function cargarReservas() {
-    const { data, error } = await sb.from('reservas').select('*').order('fecha_creacion', { ascending: false });
-    const t = document.getElementById('tabla-reservas-body');
-    if (error || !data) return t.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Error al cargar.</td></tr>`;
-    if (data.length === 0) return t.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Aún no hay reservas.</td></tr>`;
-    
-    let h = '';
-    data.forEach(r => {
-        const productos = JSON.parse(r.productos);
-        let listaProd = productos.map(p => `${p.cantidad}x ${p.nombre}`).join('<br>');
-        let colorEstado = 'bg-yellow-900 text-yellow-300';
-        if (r.estado === 'abonado') colorEstado = 'bg-blue-900 text-blue-300';
-        if (r.estado === 'entregado') colorEstado = 'bg-green-900 text-green-300';
-        if (r.estado === 'cancelado') colorEstado = 'bg-red-900 text-red-300';
-
-        h += `<tr class="border-b border-gray-700 align-top">
-            <td class="p-3 font-bold text-white">${r.cliente_nombre}</td>
-            <td class="p-3 text-sm whitespace-nowrap text-gray-300">${r.cliente_telefono}</td>
-            <td class="p-3 text-xs text-gray-400">${listaProd}</td>
-            <td class="p-3 text-sm whitespace-nowrap">
-                <span class="text-white font-bold">$${r.total_estimado}</span><br>
-                <span class="text-green-400 text-xs">($${r.monto_abonado} abonado)</span>
-            </td>
-            <td class="p-3 text-xs whitespace-nowrap text-gray-300">${r.fecha_recogida ? new Date(r.fecha_recogida).toLocaleDateString('es-CU') : 'Por definir'}</td>
-            <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorEstado}">${r.estado}</span></td>
-            <td class="p-3">
-                <select onchange="cambiarEstadoReserva(${r.id}, this.value)" class="bg-gray-700 text-white p-1 rounded text-xs border border-gray-600 outline-none focus:ring-1 focus:ring-purple-500">
-                    <option value="pendiente" ${r.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                    <option value="abonado" ${r.estado === 'abonado' ? 'selected' : ''}>Abonado 50%</option>
-                    <option value="entregado" ${r.estado === 'entregado' ? 'selected' : ''}>Entregado</option>
-                    <option value="cancelado" ${r.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
-                </select>
-            </td>
-        </tr>`;
-    });
-    t.innerHTML = h;
-}
-
-async function cambiarEstadoReserva(id, nuevoEstado) {
-    await sb.from('reservas').update({ estado: nuevoEstado }).eq('id', id);
-    cargarReservas();
-}
-
-function exportarReservasExcel() {
-    alert("Función de exportar lista de reservas a Excel (Se puede implementar igual que la de ventas).");
-}
-        
     </script>
 </body>
 </html>
