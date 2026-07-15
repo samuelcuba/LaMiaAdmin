@@ -525,22 +525,22 @@ async function cargarReservas() {
     let h = '';
     data.forEach(r => {
         const productos = JSON.parse(r.productos);
-        let listaProd = productos.map(p => `${p.cantidad}x ${p.nombre}`).join(', ');
+        let listaProd = productos.map(p => `${p.cantidad}x ${p.nombre}`).join('<br>'); // Salto de línea entre productos
         let colorEstado = 'bg-yellow-900 text-yellow-300';
         if (r.estado === 'abonado') colorEstado = 'bg-blue-900 text-blue-300';
         if (r.estado === 'entregado') colorEstado = 'bg-green-900 text-green-300';
         if (r.estado === 'cancelado') colorEstado = 'bg-red-900 text-red-300';
 
-        h += `<tr class="border-b border-gray-700">
+        h += `<tr class="border-b border-gray-700 align-top">
             <td class="p-3 font-bold">${r.cliente_nombre}</td>
-            <td class="p-3 text-sm">${r.cliente_telefono}</td>
-            <td class="p-3 text-xs max-w-xs overflow-hidden text-ellipsis">${listaProd}</td>
-            <td class="p-3 text-sm">$${r.total_estimado} / <span class="text-green-400 font-bold">$${r.monto_abonado}</span></td>
-            <td class="p-3 text-xs">${new Date(r.fecha_recogida).toLocaleDateString('es-CU')}</td>
+            <td class="p-3 text-sm whitespace-nowrap">${r.cliente_telefono}</td>
+            <td class="p-3 text-xs max-w-xs break-words">${listaProd}</td>
+            <td class="p-3 text-sm whitespace-nowrap">$${r.total_estimado} <br><span class="text-green-400 font-bold">($${r.monto_abonado} abonado)</span></td>
+            <td class="p-3 text-xs whitespace-nowrap">${r.fecha_recogida ? new Date(r.fecha_recogida).toLocaleDateString('es-CU') : 'Por definir'}</td>
             <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${colorEstado}">${r.estado}</span></td>
             <td class="p-3">
                 <select onchange="cambiarEstadoReserva(${r.id}, this.value)" class="bg-gray-700 text-white p-1 rounded text-xs border border-gray-600">
-                    <option value="pendiente">Pendiente</option>
+                    <option value="pendiente" ${r.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
                     <option value="abonado" ${r.estado === 'abonado' ? 'selected' : ''}>Abonado 50%</option>
                     <option value="entregado" ${r.estado === 'entregado' ? 'selected' : ''}>Entregado</option>
                     <option value="cancelado" ${r.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
