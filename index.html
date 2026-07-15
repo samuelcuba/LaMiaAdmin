@@ -355,9 +355,51 @@ function iniciarPanel() {
                 cancelarEdicion(); cargarProductos(); 
             } catch (e) { alert("Error: " + e.message); }
         }
-        function editarProducto(id) { const p = productosCache.find(x => x.id === id); if (!p) return; editandoId = id; document.getElementById('edit-id').value = id; document.getElementById('nombre').value = p.nombre; document.getElementById('costo').value = p.costo; document.getElementById('venta').value = p.venta; document.getElementById('existencia').value = p.existencia; document.getElementById('categoria').value = p.categoria; document.getElementById('img').value = p.img; document.getElementById('img-preview').src = p.img; document.getElementById('img-preview').classList.remove('hidden'); document.getElementById('form-title').innerText = "Editando: " + p.nombre; document.getElementById('btn-cancelar').classList.remove('hidden'); window.scrollTo(0, 0); }
-        async function eliminarProducto(id) { if (!confirm("¿Eliminar?")) return; const { error } = await sb.from('productos').delete().eq('id', id); if (error) return; cargarProductos(); }
-        function cancelarEdicion() { editandoId = null; document.getElementById('edit-id').value = ''; document.getElementById('nombre').value = ''; document.getElementById('costo').value = ''; document.getElementById('venta').value = ''; document.getElementById('existencia').value = '0'; document.getElementById('categoria').value = ''; document.getElementById('img').value = ''; document.getElementById('img-file').value = ''; document.getElementById('img-preview').src = ''; document.getElementById('img-preview').classList.add('hidden'); document.getElementById('form-title').innerText = "Agregar Nuevo Producto"; document.getElementById('btn-cancelar').classList.add('hidden'); }
+        function editarProducto(id) {
+        const p = productosCache.find(x => x.id === id);
+        if (!p) return;
+        
+        editandoId = id;
+        
+        document.getElementById('edit-id').value = id;
+        document.getElementById('nombre').value = p.nombre;
+        document.getElementById('costo').value = p.costo;
+        document.getElementById('venta').value = p.venta;
+        document.getElementById('existencia').value = p.existencia;
+        document.getElementById('categoria').value = p.categoria;
+        
+        // --- LÍNEA NUEVA PARA SUBCATEGORÍA ---
+        document.getElementById('subcategoria').value = p.subcategoria || '';
+        // -------------------------------------
+        
+        document.getElementById('img').value = p.img;
+        document.getElementById('img-preview').src = p.img;
+        document.getElementById('img-preview').classList.remove('hidden');
+        document.getElementById('form-title').innerText = "Editando: " + p.nombre;
+        document.getElementById('btn-cancelar').classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+   async function eliminarProducto(id) { if (!confirm("¿Eliminar?")) return; const { error } = await sb.from('productos').delete().eq('id', id); if (error) return; cargarProductos(); }
+   function cancelarEdicion() {
+    editandoId = null;
+    document.getElementById('edit-id').value = '';
+    document.getElementById('nombre').value = '';
+    document.getElementById('costo').value = '';
+    document.getElementById('venta').value = '';
+    document.getElementById('existencia').value = '0';
+    document.getElementById('categoria').value = '';
+    
+    // --- LÍNEA NUEVA PARA SUBCATEGORÍA ---
+    document.getElementById('subcategoria').value = '';
+    // -------------------------------------
+    
+    document.getElementById('img').value = '';
+    document.getElementById('img-file').value = '';
+    document.getElementById('img-preview').src = '';
+    document.getElementById('img-preview').classList.add('hidden');
+    document.getElementById('form-title').innerText = "Agregar Nuevo Producto Manualmente";
+    document.getElementById('btn-cancelar').classList.add('hidden');
+}
 
         // --- FINANZAS ---
         async function cargarVentas() {
