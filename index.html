@@ -81,27 +81,20 @@
         <button onclick="subirExcelProveedor()" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded font-bold">Importar Catálogo</button>
         <p id="proveedor-status" class="text-sm text-gray-400 mt-2"></p>
     </div>
-        <!-- Gestión Manual del Catálogo Proveedor -->
+    <!-- Gestión Manual del Catálogo Proveedor -->
     <div class="p-6 bg-gray-800 rounded-xl mb-8 border border-purple-500/50">
-        <h3 id="form-prov-title" class="text-xl font-bold mb-4">Agregar Producto al Catálogo Proveedor</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <input type="hidden" id="edit-prov-id">
-            <div>
-                <label class="block text-sm text-gray-400 mb-1">Nombre y Medidas</label>
-                <input type="text" id="prov-nombre" class="w-full p-2 rounded text-black" placeholder="Ej: Neumático (165/70R12)">
-            </div>
-            <div>
-                <label class="block text-sm text-gray-400 mb-1">Categoría</label>
-                <input type="text" id="prov-categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Neumáticos">
-            </div>
-            <div>
-                <label class="block text-sm text-gray-400 mb-1">Precio Estimado (USD)</label>
-                <input type="number" id="prov-precio" class="w-full p-2 rounded text-black" placeholder="Ej: 33">
-            </div>
-            <div>
-                <label class="block text-sm text-gray-400 mb-1">Detalles (Marca, Serie, etc.)</label>
-                <input type="text" id="prov-descripcion" class="w-full p-2 rounded text-black" placeholder="Ej: Marca: Michelin | Serie: X">
-            </div>
+        <h3 id="form-prov-title" class="text-xl font-bold mb-4">Agregar / Editar Producto Proveedor</h3>
+        <input type="hidden" id="edit-prov-id">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="md:col-span-2"><label class="block text-sm text-gray-400 mb-1">Nombre</label><input type="text" id="prov-nombre" class="w-full p-2 rounded text-black" placeholder="Ej: Neumático de paseo"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Categoría</label><input type="text" id="prov-categoria" class="w-full p-2 rounded text-black" placeholder="Ej: Neumáticos"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">SKU</label><input type="text" id="prov-sku" class="w-full p-2 rounded text-black"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Marca</label><input type="text" id="prov-marca" class="w-full p-2 rounded text-black"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Modelo</label><input type="text" id="prov-modelo" class="w-full p-2 rounded text-black"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Serie</label><input type="text" id="prov-serie" class="w-full p-2 rounded text-black"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Medidas</label><input type="text" id="prov-medidas" class="w-full p-2 rounded text-black" placeholder="Ej: 165/70R12"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Precio Costo (USD)</label><input type="number" id="prov-precio-costo" class="w-full p-2 rounded text-black"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Precio Venta (USD)</label><input type="number" id="prov-precio-venta" class="w-full p-2 rounded text-black"></div>
         </div>
         <div class="flex gap-3">
             <button onclick="guardarProvManual()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-bold">💾 Guardar</button>
@@ -535,41 +528,34 @@ async function subirExcelProveedor() {
 
             s.innerText = `Subiendo ${json.length} productos...`;
             let insertados = 0;
+            const cleanVal = (val) => (val && String(val).trim() !== '*') ? String(val).trim() : '';
             
             for (let i = 0; i < json.length; i++) {
                 const row = json[i];
+                let nombreBase = cleanVal(row['Nombre']) || 'Producto';
+                let medidas = cleanVal(row['Medidas']);
+                let nombreFinal = medidas ? `${nombreBase} (${medidas})` : nombreBase;
                 
-                let nombreBase = row['Nombre'] ? String(row['Nombre']).trim() : 'Neumático';
-                let medidas = row['Medidas'] ? String(row['Medidas']).trim() : '';
-                let nombreFinal = (medidas && medidas !== '*') ? `${nombreBase} (${medidas})` : nombreBase;
-                
-                let precioStr = row['Precio Venta'] || row['Precio Costo'] || '0';
-                let precioNum = parseFloat(String(precioStr).replace(/[^0-9.]/g, '')) || 0;
-
-                // Construimos una descripción detallada con todos los campos
-                let descPartes = [];
-                if (row['Marca'] && row['Marca'] !== '*') descPartes.push(`Marca: ${row['Marca']}`);
-                if (row['Modelo'] && row['Modelo'] !== '*') descPartes.push(`Modelo: ${row['Modelo']}`);
-                if (row['Serie'] && row['Serie'] !== '*') descPartes.push(`Serie: ${row['Serie']}`);
-                if (medidas && medidas !== '*') descPartes.push(`Medidas: ${medidas}`);
-                let descripcionFinal = descPartes.join(' | ');
-
                 const prod = {
                     nombre: nombreFinal,
                     categoria: 'Neumáticos',
-                    precio_estimado: precioNum,
-                    descripcion: descripcionFinal
+                    sku: cleanVal(row['SKU']),
+                    marca: cleanVal(row['Marca']),
+                    modelo: cleanVal(row['Modelo']),
+                    serie: cleanVal(row['Serie']),
+                    medidas: medidas,
+                    precio_costo: parseFloat(String(cleanVal(row['Precio Costo']) || '0').replace(/[^0-9.]/g, '')) || 0,
+                    precio_venta: parseFloat(String(cleanVal(row['Precio Venta']) || '0').replace(/[^0-9.]/g, '')) || 0
                 };
                 
                 const { error } = await sb.from('catalogo_proveedor').insert([prod]);
                 if (!error) insertados++;
             }
-            
-            s.innerText = `✅ Éxito: ${insertados} productos importados correctamente.`;
+            s.innerText = `✅ Éxito: ${insertados} productos importados.`;
             f.value = "";
+            cargarCatalogoProveedor();
         } catch (err) {
-            s.innerText = "❌ Error al leer el Excel: " + err.message;
-            console.error(err);
+            s.innerText = "❌ Error: " + err.message;
         }
     };
     reader.readAsArrayBuffer(file);
@@ -581,15 +567,16 @@ let editandoIdProv = null;
 async function cargarCatalogoProveedor() {
     const { data, error } = await sb.from('catalogo_proveedor').select('*').order('id', { ascending: true });
     const t = document.getElementById('tabla-prov-body');
-    if (error || !data) return t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Error al cargar.</td></tr>`;
-    if (data.length === 0) return t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Catálogo vacío. Sube un Excel o agrega uno manualmente.</td></tr>`;
+    if (error || !data) return t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Error.</td></tr>`;
+    if (data.length === 0) return t.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Vacío.</td></tr>`;
     
     let h = '';
     data.forEach(p => {
+        let detalles = [p.marca, p.modelo, p.serie, p.medidas].filter(Boolean).join(' | ');
         h += `<tr class="border-b border-gray-700 align-top">
             <td class="p-3 font-bold text-white text-sm">${p.nombre}</td>
-            <td class="p-3 text-xs text-gray-400 max-w-xs">${p.descripcion || 'N/A'}</td>
-            <td class="p-3 text-sm text-green-400 font-bold whitespace-nowrap">$${p.precio_estimado} USD</td>
+            <td class="p-3 text-xs text-gray-400">${detalles || 'N/A'}</td>
+            <td class="p-3 text-sm text-green-400 font-bold">$${p.precio_venta} USD</td>
             <td class="p-3 flex gap-2">
                 <button onclick="editarProv(${p.id})" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">✏️</button>
                 <button onclick="eliminarProv(${p.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">🗑️</button>
@@ -601,22 +588,27 @@ async function cargarCatalogoProveedor() {
 
 async function guardarProvManual() {
     const id = document.getElementById('edit-prov-id').value;
-    const n = document.getElementById('prov-nombre').value.trim();
-    const c = document.getElementById('prov-categoria').value.trim() || 'General';
-    const p = parseFloat(document.getElementById('prov-precio').value) || 0;
-    const d = document.getElementById('prov-descripcion').value.trim();
+    const prod = {
+        nombre: document.getElementById('prov-nombre').value.trim(),
+        categoria: document.getElementById('prov-categoria').value.trim() || 'General',
+        sku: document.getElementById('prov-sku').value.trim(),
+        marca: document.getElementById('prov-marca').value.trim(),
+        modelo: document.getElementById('prov-modelo').value.trim(),
+        serie: document.getElementById('prov-serie').value.trim(),
+        medidas: document.getElementById('prov-medidas').value.trim(),
+        precio_costo: parseFloat(document.getElementById('prov-precio-costo').value) || 0,
+        precio_venta: parseFloat(document.getElementById('prov-precio-venta').value) || 0
+    };
     
-    if (!n) return alert("El nombre es obligatorio.");
+    if (!prod.nombre) return alert("El nombre es obligatorio.");
     
     try {
         if (editandoIdProv !== null) {
-            const { error } = await sb.from('catalogo_proveedor').update({ nombre: n, categoria: c, precio_estimado: p, descripcion: d }).eq('id', editandoIdProv);
+            const { error } = await sb.from('catalogo_proveedor').update(prod).eq('id', editandoIdProv);
             if (error) throw error;
-            alert("Producto del proveedor actualizado.");
         } else {
-            const { error } = await sb.from('catalogo_proveedor').insert([{ nombre: n, categoria: c, precio_estimado: p, descripcion: d }]);
+            const { error } = await sb.from('catalogo_proveedor').insert([prod]);
             if (error) throw error;
-            alert("Producto agregado al catálogo del proveedor.");
         }
         cancelarEdicionProv();
         cargarCatalogoProveedor();
@@ -624,15 +616,19 @@ async function guardarProvManual() {
 }
 
 function editarProv(id) {
-    // Buscamos el producto en la base de datos y llenamos el formulario
     sb.from('catalogo_proveedor').select('*').eq('id', id).single().then(({ data, error }) => {
         if (error || !data) return;
         editandoIdProv = id;
         document.getElementById('edit-prov-id').value = id;
         document.getElementById('prov-nombre').value = data.nombre;
         document.getElementById('prov-categoria').value = data.categoria;
-        document.getElementById('prov-precio').value = data.precio_estimado;
-        document.getElementById('prov-descripcion').value = data.descripcion;
+        document.getElementById('prov-sku').value = data.sku || '';
+        document.getElementById('prov-marca').value = data.marca || '';
+        document.getElementById('prov-modelo').value = data.modelo || '';
+        document.getElementById('prov-serie').value = data.serie || '';
+        document.getElementById('prov-medidas').value = data.medidas || '';
+        document.getElementById('prov-precio-costo').value = data.precio_costo || 0;
+        document.getElementById('prov-precio-venta').value = data.precio_venta || 0;
         document.getElementById('form-prov-title').innerText = "Editando: " + data.nombre;
         document.getElementById('btn-cancelar-prov').classList.remove('hidden');
         window.scrollTo(0, 0);
@@ -644,9 +640,14 @@ function cancelarEdicionProv() {
     document.getElementById('edit-prov-id').value = '';
     document.getElementById('prov-nombre').value = '';
     document.getElementById('prov-categoria').value = '';
-    document.getElementById('prov-precio').value = '';
-    document.getElementById('prov-descripcion').value = '';
-    document.getElementById('form-prov-title').innerText = "Agregar Producto al Catálogo Proveedor";
+    document.getElementById('prov-sku').value = '';
+    document.getElementById('prov-marca').value = '';
+    document.getElementById('prov-modelo').value = '';
+    document.getElementById('prov-serie').value = '';
+    document.getElementById('prov-medidas').value = '';
+    document.getElementById('prov-precio-costo').value = '';
+    document.getElementById('prov-precio-venta').value = '';
+    document.getElementById('form-prov-title').innerText = "Agregar / Editar Producto Proveedor";
     document.getElementById('btn-cancelar-prov').classList.add('hidden');
 }
 
