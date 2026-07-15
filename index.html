@@ -87,9 +87,15 @@
         <button onclick="exportarReservasExcel()" class="bg-green-700 hover:bg-green-800 px-4 py-2 rounded font-bold text-sm flex items-center gap-2">📊 Exportar Reservas</button>
     </div>
     <div class="overflow-x-auto bg-gray-800 rounded-xl">
-        <table class="w-full text-left">
+        <table class="min-w-full w-full text-left">
             <thead><tr class="border-b border-gray-700 text-gray-400">
-                <th class="p-3">Cliente</th><th class="p-3">Teléfono</th><th class="p-3">Productos</th><th class="p-3">Total / Abonado</th><th class="p-3">Recogida</th><th class="p-3">Estado</th><th class="p-3">Acción</th>
+                <th class="p-3 whitespace-nowrap">Cliente</th>
+                <th class="p-3 whitespace-nowrap">Teléfono</th>
+                <th class="p-3 min-w-[200px]">Productos</th>
+                <th class="p-3 whitespace-nowrap">Total / Abonado</th>
+                <th class="p-3 whitespace-nowrap">Recogida</th>
+                <th class="p-3 whitespace-nowrap">Estado</th>
+                <th class="p-3 whitespace-nowrap">Acción</th>
             </tr></thead>
             <tbody id="tabla-reservas-body"></tbody>
         </table>
