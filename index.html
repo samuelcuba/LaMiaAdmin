@@ -336,8 +336,24 @@ function iniciarPanel() {
             t.innerHTML = h;
         }
         async function guardarProducto() {
-            const id = document.getElementById('edit-id').value, n = document.getElementById('nombre').value, c = parseInt(document.getElementById('costo').value) || 0, v = parseInt(document.getElementById('venta').value) || 0, e = parseInt(document.getElementById('existencia').value) || 0, cat = document.getElementById('categoria').value; if (!n || !v || !cat) return; let iU = document.getElementById('img').value;
-            try { if (document.getElementById('img-file').files.length > 0) iU = await subirImagenSupabase(); if (!iU) return; if (editandoId !== null) { const { error } = await sb.from('productos').update({ nombre: n, costo: c, venta: v, existencia: e, categoria: cat, img: iU }).eq('id', editandoId); if (error) throw error; alert("Actualizado"); } else { const { data: mD } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1); const nI = mD.length > 0 ? mD[0].id + 1 : 1; const { error } = await sb.from('productos').insert([{ id: nI, nombre: n, costo: c, venta: v, existencia: e, categoria: cat, img: iU }]); if (error) throw error; alert("Agregado"); } cancelarEdicion(); cargarProductos(); } catch (e) { alert("Error: " + e.message); }
+            const id = document.getElementById('edit-id').value, n = document.getElementById('nombre').value, c = parseInt(document.getElementById('costo').value) || 0, v = parseInt(document.getElementById('venta').value) || 0, e = parseInt(document.getElementById('existencia').value) || 0, cat = document.getElementById('categoria').value, subcat = document.getElementById('subcategoria').value || 'General'; 
+            if (!n || !v || !cat) return; 
+            let iU = document.getElementById('img').value;
+            try { 
+                if (document.getElementById('img-file').files.length > 0) iU = await subirImagenSupabase(); 
+                if (!iU) return; 
+                
+                if (editandoId !== null) { 
+                    const { error } = await sb.from('productos').update({ nombre: n, costo: c, venta: v, existencia: e, categoria: cat, subcategoria: subcat, img: iU }).eq('id', editandoId); 
+                    if (error) throw error; alert("Actualizado"); 
+                } else { 
+                    const { data: mD } = await sb.from('productos').select('id').order('id', { ascending: false }).limit(1); 
+                    const nI = mD.length > 0 ? mD[0].id + 1 : 1; 
+                    const { error } = await sb.from('productos').insert([{ id: nI, nombre: n, costo: c, venta: v, existencia: e, categoria: cat, subcategoria: subcat, img: iU }]); 
+                    if (error) throw error; alert("Agregado"); 
+                } 
+                cancelarEdicion(); cargarProductos(); 
+            } catch (e) { alert("Error: " + e.message); }
         }
         function editarProducto(id) { const p = productosCache.find(x => x.id === id); if (!p) return; editandoId = id; document.getElementById('edit-id').value = id; document.getElementById('nombre').value = p.nombre; document.getElementById('costo').value = p.costo; document.getElementById('venta').value = p.venta; document.getElementById('existencia').value = p.existencia; document.getElementById('categoria').value = p.categoria; document.getElementById('img').value = p.img; document.getElementById('img-preview').src = p.img; document.getElementById('img-preview').classList.remove('hidden'); document.getElementById('form-title').innerText = "Editando: " + p.nombre; document.getElementById('btn-cancelar').classList.remove('hidden'); window.scrollTo(0, 0); }
         async function eliminarProducto(id) { if (!confirm("¿Eliminar?")) return; const { error } = await sb.from('productos').delete().eq('id', id); if (error) return; cargarProductos(); }
